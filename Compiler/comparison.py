@@ -78,6 +78,26 @@ def LTZ(s, a, k, kappa):
     """
     from .types import sint, _bitint
     from .GC.types import sbitvec
+    if program.use_rabbit():
+        r, r_bits = sint.get_edabit(program.bit_length, True)
+        masked_a = (a + r).reveal()
+        R = None
+
+        if program.options.ring is False:
+            R = int((program.P - 1) / 2)
+        else:
+            R = int(program.P / 2)
+
+        M = program.P
+        masked_b = masked_a + M - R
+        w1 = sint()
+        w2 = sint()
+        BitLTL(w1, masked_a, r_bits, kappa=4)
+        BitLTL(w2, masked_b, r_bits, kappa=4)
+        w3 = (masked_b < M - R)
+        movs(s, w1 - w2 + w3)
+        return
+
     if program.use_split():
         movs(s, sint.conv(sbitvec(a, k).v[-1]))
         return
@@ -256,6 +276,7 @@ def Mod2mField(a_prime, a, k, m, kappa, signed):
         BitLTC1(u, c_prime, r, kappa)
     else:
         BitLTL(u, c_prime, r, kappa)
+
     mulm(t[4], u, c2m)
     submr(t[5], c_prime, r_prime)
     adds(a_prime, t[5], t[4])

@@ -1,0 +1,13 @@
+# ./compile.py test_rabbit
+# ./Scripts/rep-field.sh test_rabbit
+
+program.use_edabit(True)
+program.set_rabbit(True)
+
+a = sint(200)
+b = sint(100)
+print_ln('compare result: %s', (a<b).reveal())
+
+
+
+

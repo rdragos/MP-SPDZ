@@ -100,6 +100,7 @@ class Program(object):
         self._edabit = options.edabit
         self._split = False
         self._square = False
+        self._rabbit = False
         Program.prog = self
 
     def get_args(self):
@@ -324,6 +325,12 @@ class Program(object):
             return self._edabit
         else:
             self._edabit = change
+
+    def use_rabbit(self):
+        return self._rabbit
+
+    def set_rabbit(self, value):
+        self._rabbit = value
 
     def use_edabit_for(self, *args):
         return True
