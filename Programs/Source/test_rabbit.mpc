@@ -4,10 +4,15 @@
 program.use_edabit(True)
 program.set_rabbit(True)
 
-a = sint(200)
-b = sint(100)
-print_ln('compare result: %s', (a<b).reveal())
+def rabbit(a, b):
+    res = sint()
+    comparison.LTZ(res, a-b, program.bit_length, None)
+    return res
 
 
+a = sint(0)
+b = sint(10)
+# print_ln('%s', program.P)
+print_ln('compare result: %s', rabbit(a,b).reveal())
 
 

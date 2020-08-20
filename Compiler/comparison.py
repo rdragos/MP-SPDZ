@@ -81,21 +81,39 @@ def LTZ(s, a, k, kappa):
     if program.use_rabbit():
         r, r_bits = sint.get_edabit(program.bit_length, True)
         masked_a = (a + r).reveal()
-        R = None
+        # R = None
 
-        if program.options.ring is False:
-            R = int((program.P - 1) / 2)
-        else:
-            R = int(program.P / 2)
+        # if program.options.ring is False:
+        #     R = int((program.P - 1) / 2)
+        # else:
+        #     R = int(program.P / 2)
 
-        M = program.P
+        # M = program.P
+        M = 2**64
+        R = 2**63
+        # Check if this next line is done modulo the modulus
         masked_b = masked_a + M - R
-        w1 = sint()
-        w2 = sint()
-        BitLTL(w1, masked_a, r_bits, kappa=4)
-        BitLTL(w2, masked_b, r_bits, kappa=4)
-        w3 = (masked_b < M - R)
-        movs(s, w1 - w2 + w3)
+        # r.reveal().print_reg()
+        
+        # w1 = sint()
+        # w2 = sint()
+        # print(len(r_bits))
+        # print(k)
+
+        w1 = RabbitLT(r_bits, masked_a, 64)
+        w2 = RabbitLT(r_bits, masked_b, 64)
+        # BitLTL(w1, masked_a, r_bits, kappa=None)
+        # BitLTL(w2, masked_b, r_bits, kappa=None)
+        w3 = (masked_b < R)
+
+        r.reveal().print_reg("r")
+        masked_a.print_reg("m_a")
+        masked_b.print_reg("m_b")
+        w1.reveal().print_reg("w1")
+        w2.reveal().print_reg("w2")
+        w3.print_reg_plain()
+
+        movs(s, sint.conv(w1 - w2 + w3))
         return
 
     if program.use_split():
@@ -117,6 +135,45 @@ def LTZ(s, a, k, kappa):
     t = sint()
     Trunc(t, a, k, k - 1, kappa, True)
     subsfi(s, t, 0)
+
+def RabbitLT(x, R, k):
+    """
+    res = x <? R (logarithmic rounds version)
+
+    x: array of secret bits
+    R: clear integer register
+    """
+    from .types import sint, _bitint
+
+    R_bits = x[0].bit_decompose_clear(R, k)
+    y = [program.curr_block.new_reg('s') for i in range(k)]
+    z = [program.curr_block.new_reg('s') for i in range(k)]
+    w = [program.curr_block.new_reg('s') for i in range(k)]
+    print(len(R_bits));
+    print(k)
+    for i in range(k):
+        y[i] = x[i].bit_xor(R_bits[i]).bit_xor(R_bits[0].long_one())
+
+    z[0] = y[0]
+    for i in range(1,k):
+        z[i] = y[i] * z[i-1]
+    # PreMulC_with_inverses_and_vectors(z, y);
+
+    for i in range(k-1):
+        w[i] = z[i] ^ z[i+1]
+    w[k-1] = z[k-1]
+
+    # total=sint();
+    total = program.curr_block.new_reg('s')
+    out = program.curr_block.new_reg('s')
+    total = R_bits[0].long_one()
+    total = 1 - total
+    for i in range(k):
+        out = R_bits[i] & z[i];
+        # print(type(out))
+        total = total ^ out;
+    return total
+
 
 def LessThanZero(a, k, kappa):
     from . import types
