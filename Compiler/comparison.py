@@ -100,11 +100,17 @@ def LTZ(s, a, k, kappa):
         # print(len(r_bits))
         # print(k)
 
-        w1 = RabbitLT(r_bits, masked_a, 64)
-        w2 = RabbitLT(r_bits, masked_b, 64)
+        w1 = RabbitLT(masked_a, r_bits, 64)
+        r.reveal().print_reg("r")
+        w2 = RabbitLT(masked_b, r_bits, 64)
+        # masked_a.print_reg("m_a")
+        # masked_b.print_reg("m_b")
+        # print(type(w1))
         # BitLTL(w1, masked_a, r_bits, kappa=None)
         # BitLTL(w2, masked_b, r_bits, kappa=None)
-        w3 = (masked_b < R)
+
+        # Can this be fixed?
+        w3 = (masked_b < 0)
 
         r.reveal().print_reg("r")
         masked_a.print_reg("m_a")
@@ -136,43 +142,93 @@ def LTZ(s, a, k, kappa):
     Trunc(t, a, k, k - 1, kappa, True)
     subsfi(s, t, 0)
 
-def RabbitLT(x, R, k):
+def RabbitLT(R, x, k):
     """
-    res = x <? R (logarithmic rounds version)
+    res = R <? x (logarithmic rounds version)
 
-    x: array of secret bits
     R: clear integer register
+    x: array of secret bits
     """
     from .types import sint, _bitint
 
+    # a = program.curr_block.new_reg('s')
+    # a = (R < 2**63)
+    # a.print_reg("A")
     R_bits = x[0].bit_decompose_clear(R, k)
     y = [program.curr_block.new_reg('s') for i in range(k)]
-    z = [program.curr_block.new_reg('s') for i in range(k)]
+    z = [program.curr_block.new_reg('s') for i in range(k+1)]
     w = [program.curr_block.new_reg('s') for i in range(k)]
-    print(len(R_bits));
-    print(k)
+    # print(len(R_bits));
+    # print(k)
+
+    x_clear = [program.curr_block.new_reg('s') for i in range(k)]
     for i in range(k):
-        y[i] = x[i].bit_xor(R_bits[i]).bit_xor(R_bits[0].long_one())
+        x_clear[i] = x[i].reveal()
+    
+    for i in range(k):
+        x_clear[i].print_reg_plain()
+        
+    x[0].reveal().print_reg("x") 
 
-    z[0] = y[0]
-    for i in range(1,k):
-        z[i] = y[i] * z[i-1]
+    for i in range(k):
+        R_bits[i].print_reg_plain()
+
+    x[0].reveal().print_reg("r") 
+ 
+
+    for i in range(k):
+        y[i] = x[i].bit_xor(R_bits[i]).bit_xor(1)
+
+    y_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        y_clear[i] = y[i].reveal()
+
+    for i in range(k):
+        y_clear[i].print_reg_plain()
+
+    x[0].reveal().print_reg("y") 
+
+
+    z[k-1] = y[k-1]
+    for i in range(k-1, 0, -1):
+        z[i-1] = y[i-1] * z[i]
     # PreMulC_with_inverses_and_vectors(z, y);
+    z_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        z_clear[i] = z[i].reveal()
 
-    for i in range(k-1):
-        w[i] = z[i] ^ z[i+1]
-    w[k-1] = z[k-1]
+    for i in range(k):
+        z_clear[i].print_reg_plain()
+
+    x[0].reveal().print_reg("z") 
+
+
+    z[k] = 1
+    for i in range(k, 0, -1):
+        w[i-1] = z[i-1] ^ z[i]
+    # w[k-1] = z[k-1]
+
+    w_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        w_clear[i] = w[i].reveal()
+
+    for i in range(k):
+        w_clear[i].print_reg_plain()
+
+    x[0].reveal().print_reg("w") 
 
     # total=sint();
     total = program.curr_block.new_reg('s')
     out = program.curr_block.new_reg('s')
-    total = R_bits[0].long_one()
-    total = 1 - total
+    total = x[0] & (1-x[0])
+    total.reveal().print_reg()
+    # total = 1 - total
+    # print(type(total))
     for i in range(k):
-        out = R_bits[i] & z[i];
+        out = R_bits[i] & w[i];
         # print(type(out))
         total = total ^ out;
-    return total
+    return 1 - total
 
 
 def LessThanZero(a, k, kappa):

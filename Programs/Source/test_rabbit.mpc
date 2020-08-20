@@ -11,7 +11,7 @@ def rabbit(a, b):
 
 
 a = sint(0)
-b = sint(10)
+b = sint(-7627189370119394682)
 # print_ln('%s', program.P)
 print_ln('compare result: %s', rabbit(a,b).reveal())
 
