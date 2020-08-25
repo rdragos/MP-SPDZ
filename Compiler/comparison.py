@@ -79,25 +79,41 @@ def LTZ(s, a, k, kappa):
     from .types import sint, _bitint
     from .GC.types import sbitvec
     if program.use_rabbit():
-        r, r_bits = sint.get_edabit(program.bit_length, True)
+
+        BIT_SIZE = 64
+        M = None; R = None; r = None; r_bits = None; 
+        length_eda = BIT_SIZE
+
+
+        if (program.options.ring):
+            # length_eda = program.bit_length + 1
+            M = 2**(program.bit_length + 1)
+            R = 2**(program.bit_length)
+        else:
+            # length_eda = 64
+            M = program.P
+            R = (M - 1) // 2
+            # M = 2**64
+            # R = 2**63
+            # print(R)
+            # print(M)
+            # print(length_eda)
+
+        r, r_bits = sint.get_edabit(length_eda, True)
+
         masked_a = (a + r).reveal()
-
-        if program.options.ring is False:
-            raise CompilerError('The other rabbit is not implemented')
-
-        M = 2**64
-        R = 2**63
-        # Check if this next line is done modulo the modulus
         masked_b = masked_a + M - R
 
-        w1 = RabbitLT(masked_a, r_bits, 64)
-        w2 = RabbitLT(masked_b, r_bits, 64)
+        w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
+        w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
         # Can this be fixed?
         w3 = (masked_b < 0)
 
         movs(s, sint.conv(w1 - w2 + w3))
         return
+
+
 
     if program.use_split():
         movs(s, sint.conv(sbitvec(a, k).v[-1]))
@@ -118,6 +134,7 @@ def LTZ(s, a, k, kappa):
     t = sint()
     Trunc(t, a, k, k - 1, kappa, True)
     subsfi(s, t, 0)
+
 
 def RabbitLT(R, x, k):
     """
