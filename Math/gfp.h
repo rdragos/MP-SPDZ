@@ -67,7 +67,9 @@ class gfp_
   // must be negative
   static const int N_BITS = -1;
 
-  static const int MAX_EDABITS = MAX_N_BITS - 40;
+  //static const int MAX_EDABITS = MAX_N_BITS - 40;
+  // Careful with the gfp case
+  static const int MAX_EDABITS = MAX_N_BITS;
 
   template<class T>
   static void init(bool mont = true)
