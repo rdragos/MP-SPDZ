@@ -98,17 +98,47 @@ def LTZ(s, a, k, kappa):
             # print(R)
             # print(M)
             # print(length_eda)
-
+        
         r, r_bits = sint.get_edabit(length_eda, True)
+        # print(len(r_bits))
 
+        # These computations need to happen modulo M
         masked_a = (a + r).reveal()
-        masked_b = masked_a + M - R
+        masked_b = masked_a - R + M
+        # masked_b = masked_a + M - R
+
+        r.reveal().print_reg("r")
+        masked_a.print_reg("m_a")
+        masked_b.print_reg("m_b")
+        # M-R   = 4611686018427551745
+        # R     = 4611686018427551744
+        # 2**62 = 4611686018427387904
+        # P     = 9223372036855103489
+
+        # R     = 9223372036854775778
+        # M     = 18446744073709551557
+
+        # MSB is x[63]
+        # print("100000000000000000000000000000000000000000000101000000000000001") --> MSB is on the left
+        # 0100000000000000000000000000000000000000000000101000000000000001 R+1
+        # 0100000000000000000000000000000000000000000000101000000000000000 R
+        # 0001010010101111011110001000010101000111101011011000101001010101 m_a
+        # 1101010010101111011110001000010101000111101010110000101001010101 m_b
+        # print(type(w1))
+
+1110111011111011010101011110001011110010111111000111101110101000
+1110111011111011010101011110001011110010111111000111101111100011
+
 
         w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
         w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
         # Can this be fixed?
-        w3 = (masked_b < 0)
+        w3 = (masked_b > 0)
+
+        w1.reveal().print_reg("w1")
+        w2.reveal().print_reg("w2")
+        w3.print_reg_plain()
 
         movs(s, sint.conv(w1 - w2 + w3))
         return
@@ -150,8 +180,38 @@ def RabbitLT(R, x, k):
     z = [program.curr_block.new_reg('s') for i in range(k+1)]
     w = [program.curr_block.new_reg('s') for i in range(k)]
 
+
+    # x_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    # for i in range(k):
+    #     x_clear[i] = x[i].reveal()
+    # for i in range(k):
+    #     x_clear[i].print_reg_plain()
+    # x[0].reveal().print_reg("x") 
+
+    ###########
+    x_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        x_clear[i] = x[i].reveal()
+    for i in range(k):
+        x_clear[k-1-i].print_reg_plain()
+    x[0].reveal().print_reg("x") 
+
+    for i in range(k):
+        R_bits[k-1-i].print_reg_plain()
+    x[0].reveal().print_reg("clr") 
+    ###########
+
     for i in range(k):
         y[i] = x[i].bit_xor(R_bits[i]).bit_xor(1)
+
+    ###########
+    y_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        y_clear[i] = y[i].reveal()
+    for i in range(k):
+        y_clear[k-1-i].print_reg_plain()
+    x[0].reveal().print_reg("y") 
+    ###########
 
     z[k-1] = y[k-1]
     for i in range(k-1, 0, -1):
@@ -160,6 +220,26 @@ def RabbitLT(R, x, k):
     z[k] = 1
     for i in range(k, 0, -1):
         w[i-1] = z[i-1] ^ z[i]
+
+    ###########
+    z_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        z_clear[i] = z[i].reveal()
+    for i in range(k):
+        z_clear[k-1-i].print_reg_plain()
+    x[0].reveal().print_reg("z") 
+    ###########
+
+    ###########
+    w_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        w_clear[i] = w[i].reveal()
+
+    for i in range(k):
+        w_clear[k-1-i].print_reg_plain()
+    x[0].reveal().print_reg("w") 
+    ###########
+
 
     total = program.curr_block.new_reg('s')
     out = program.curr_block.new_reg('s')

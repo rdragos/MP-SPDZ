@@ -53,7 +53,7 @@ class Program(object):
         if options.ring:
             self.bit_length = int(options.ring) - 1
         else:
-            self.bit_length = int(options.binary) or int(options.field)
+            self.bit_length = 64; #int(options.binary) or int(options.field)
         if not self.bit_length:
             self.bit_length = BIT_LENGTHS[param]
         print('Default bit length:', self.bit_length)

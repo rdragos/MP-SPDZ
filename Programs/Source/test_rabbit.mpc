@@ -10,10 +10,11 @@ def rabbit(a, b):
     return res
 
 
-a = sint(0)
-b = sint(-7627189370119394682)
+a = sint(8)
+b = sint(10)
 # print_ln('%s', program.P)
-print_ln('%s', sint(9223372036855103489).reveal())
+# print_ln('%s', sint(9223372036855103488).reveal())
+# print_ln('%s', sint(18446744073709551556).reveal())
 print_ln('compare result: %s', rabbit(a,b).reveal())
 
 
