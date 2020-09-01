@@ -1,9 +1,10 @@
-# ./compile.py test_rabbit
 # ./Scripts/rep-field.sh test_rabbit
+# ./compile.py test_rabbit
 
 program.use_edabit(True)
 program.set_rabbit(True)
-
+# from Compiler import util
+# util.tree_reduce(operator.mul, z))
 
 def RabbitBitDec(x, k):
     r_bits = [cint((x >> i) & 1) for i in range(k)]
@@ -99,14 +100,13 @@ def rabbit(a, b):
 
 
 a = sint(0)
-b = sint(5377418436109026203)
+b = sint(2**63-5)
 # print_ln('%s', program.P)
-print_ln('secret in life: %s', sint(18446744073709551557).reveal())
 print_ln('compare result: %s', rabbit(a,b).reveal())
 
-for i in range(-10, 10):
-    for j in range(-10, 10):
-        print_str('%s ', rabbit(sint(i), sint(j)).reveal())
-    print_ln('')
+#for i in range(-10, 10):
+#    for j in range(-10, 10):
+#        print_str('%s ', rabbit(sint(i), sint(j)).reveal())
+#    print_ln('')
 
 
