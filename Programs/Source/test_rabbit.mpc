@@ -4,6 +4,11 @@
 program.use_edabit(True)
 program.set_rabbit(True)
 
+
+def RabbitBitDec(x, k):
+    r_bits = [cint((x >> i) & 1) for i in range(k)]
+    return r_bits
+
 def RabbitLT(R, x, k):
     """
     res = R <? x (logarithmic rounds version)
@@ -12,7 +17,8 @@ def RabbitLT(R, x, k):
     x: array of secret bits
     """
 
-    R_bits = x[0].bit_decompose_clear(R, k)
+    R_bits = RabbitBitDec(R, k)
+    x_clear = [x[i].reveal() for i in range(k)]
     y = [program.curr_block.new_reg('s') for i in range(k)]
     z = [program.curr_block.new_reg('s') for i in range(k+1)]
     w = [program.curr_block.new_reg('s') for i in range(k)]
@@ -25,6 +31,7 @@ def RabbitLT(R, x, k):
         z[i-1] = y[i-1] * z[i]
     
     z[k] = 1
+
     for i in range(k, 0, -1):
         w[i-1] = z[i-1] ^ z[i]
 
@@ -63,15 +70,25 @@ def customLTZ(s, a, k, kappa):
             # print(length_eda)
 
         r, r_bits = sint.get_edabit(length_eda, True)
+#        r_clear = 6644667428801815279
+#        print_ln('r_clear = %s', r_clear)
+#        r = sint(r_clear)
+#        r_bits = [sbit((r_clear >> i) & 1) for i in range(64)]
 
+#        print_ln('a = %s, r = %s', a.reveal(), r.reveal())
         masked_a = (a + r).reveal()
+#        print_ln('masked_a = %s', masked_a)
         masked_b = masked_a + M - R
+#        print_ln('%s %s %s', masked_b, M, R)
 
         w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
         w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
+#        print_ln('w1 = %s masked_a = %s r = %s', w1.reveal(), masked_a, r.reveal())
+#        print_ln('w2 = %s masked_b = %s r = %s', w2.reveal(), masked_b, r.reveal())
         # Can this be fixed?
-        w3 = (masked_b < 0)
+        w3 = (masked_b > 0)
+#        print_ln('w3 = %s', w3.reveal())
 
         movs(s, sint.conv(w1 - w2 + w3))
 
@@ -82,9 +99,14 @@ def rabbit(a, b):
 
 
 a = sint(0)
-b = sint(-7627189370119394682)
+b = sint(5377418436109026203)
 # print_ln('%s', program.P)
-print_ln('%s', sint(9223372036855103489).reveal())
+print_ln('secret in life: %s', sint(18446744073709551557).reveal())
 print_ln('compare result: %s', rabbit(a,b).reveal())
+
+for i in range(-10, 10):
+    for j in range(-10, 10):
+        print_str('%s ', rabbit(sint(i), sint(j)).reveal())
+    print_ln('')
 
 
