@@ -1,5 +1,8 @@
-# ./Scripts/rep-field.sh test_rabbit
-# ./compile.py test_rabbit
+# ./compile.py -p 64 test_rabbit
+# ./Scripts/rep-field.sh test_rabbit -P 18446744073709551557
+# ./compile.py -R 64 test_rabbit
+# ./Scripts/ring.sh test_rabbit
+
 
 program.use_edabit(True)
 program.set_rabbit(True)
@@ -99,15 +102,48 @@ def rabbit(a, b):
 
 
 a = sint(0)
-b = sint(2**63-5)
+b = sint(5)
 # print_ln('%s', program.P)
-print_ln('compare result: %s', rabbit(a,b).reveal())
+# print_ln('compare result: %s', rabbit(a,b).reveal())
 
 #for i in range(-10, 10):
 #    for j in range(-10, 10):
 #        print_str('%s ', rabbit(sint(i), sint(j)).reveal())
 #    print_ln('')
 
-print_str('%s', rabbit(sint(0), sint(1)).reveal() == 1)
-print_str('%s', rabbit(sint(1), sint(0)).reveal() == 0)
+
+
+
+print_str('%s ', rabbit(sint(0), sint(1)).reveal() == 1)
+print_str('%s ', rabbit(sint(1), sint(0)).reveal() == 0)
+print_str('%s ', rabbit(sint(0), sint(-1)).reveal() == 0)
+print_str('%s ', rabbit(sint(-1), sint(0)).reveal() == 1)
+
+if (program.options.ring):
+	############################### Ring cases ###############################
+    print_str('%s ', rabbit(sint(18446744073709551615), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(18446744073709551615)).reveal() == 0)
+    # 2**63 is considered to be positive
+    print_str('%s ', rabbit(sint(9223372036854775808), sint(0)).reveal() == 0)
+    # 2**63-1 is positive
+    print_str('%s ', rabbit(sint(9223372036854775807), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775807)).reveal() == 1)
+    # 2**63+1 is negative
+    print_str('%s ', rabbit(sint(9223372036854775809), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775809)).reveal() == 0)
+else:
+	############################### Field cases ###############################
+    print_str('%s ', rabbit(sint(18446744073709551555), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(1), sint(18446744073709551556)).reveal() == 0)
+    # (p-1)/2 is considered to be positive
+    print_str('%s ', rabbit(sint(9223372036854775778), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775778)).reveal() == 1)
+    # (p-1)/2-1 is positive
+    print_str('%s ', rabbit(sint(9223372036854775777), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775777)).reveal() == 1)
+    # (p-1)/2+1 is negative
+    print_str('%s ', rabbit(sint(9223372036854775779), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775779)).reveal() == 0)
+
+
 print_ln('')
