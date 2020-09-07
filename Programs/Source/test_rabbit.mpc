@@ -24,26 +24,32 @@ def RabbitLT(R, x, k):
     R_bits = RabbitBitDec(R, k)
     x_clear = [x[i].reveal() for i in range(k)]
     y = [program.curr_block.new_reg('s') for i in range(k)]
-    z = [program.curr_block.new_reg('s') for i in range(k+1)]
+    z = [program.curr_block.new_reg('s') for i in range(k)]
     w = [program.curr_block.new_reg('s') for i in range(k)]
+    one = program.curr_block.new_reg('s')
+    one = 1
 
     for i in range(k):
         y[i] = x[i].bit_xor(R_bits[i]).bit_xor(1)
 
     z[k-1] = y[k-1]
+    w[k-1] = y[k-1] ^ one
+
     for i in range(k-1, 0, -1):
         z[i-1] = y[i-1] * z[i]
-    
-    z[k] = 1
-    for i in range(k, 0, -1):
+
+    for i in range(k-1,0,-1): # no optimizing
         w[i-1] = z[i-1] ^ z[i]
 
     total = program.curr_block.new_reg('s')
-    out = program.curr_block.new_reg('s')
-    total = x[0] & (1-x[0])
+    out = [program.curr_block.new_reg('s') for i in range(k)]
+    total = one
     for i in range(k):
-        out = R_bits[i] & w[i];
-        total = total ^ out;
+        out[i] = R_bits[i] & w[i];
+
+    for i in range(k):
+        total = total ^ out[i]
+
     return 1 - total
 
 def customLTZ(s, a, k, kappa):
