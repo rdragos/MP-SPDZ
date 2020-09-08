@@ -71,39 +71,22 @@ def customLTZ(s, a, k, kappa):
         length_eda = BIT_SIZE
 
         if (program.options.ring):
-            # length_eda = program.bit_length + 1
             M = 2**(program.bit_length + 1)
             R = 2**(program.bit_length)
         else:
             # length_eda = 64
             M = program.P
             R = (M - 1) // 2
-            # M = 2**64
-            # R = 2**63
-            # print(R)
-            # print(M)
-            # print(length_eda)
 
         r, r_bits = sint.get_edabit(length_eda, True)
-#        r_clear = 6644667428801815279
-#        print_ln('r_clear = %s', r_clear)
-#        r = sint(r_clear)
-#        r_bits = [sbit((r_clear >> i) & 1) for i in range(64)]
-
-#        print_ln('a = %s, r = %s', a.reveal(), r.reveal())
         masked_a = (a + r).reveal()
-#        print_ln('masked_a = %s', masked_a)
         masked_b = masked_a + M - R
-#        print_ln('%s %s %s', masked_b, M, R)
 
         w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
         w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
-#        print_ln('w1 = %s masked_a = %s r = %s', w1.reveal(), masked_a, r.reveal())
-#        print_ln('w2 = %s masked_b = %s r = %s', w2.reveal(), masked_b, r.reveal())
         # Can this be fixed?
         w3 = (masked_b > 0)
-#        print_ln('w3 = %s', w3.reveal())
 
         movs(s, sint.conv(w1 - w2 + w3))
 
@@ -127,35 +110,35 @@ b = sint(5)
 
 
 print_str('%s ', rabbit(sint(0), sint(1)).reveal() == 1)
-#print_str('%s ', rabbit(sint(1), sint(0)).reveal() == 0)
-#print_str('%s ', rabbit(sint(0), sint(-1)).reveal() == 0)
-#print_str('%s ', rabbit(sint(-1), sint(0)).reveal() == 1)
-#
-#if (program.options.ring):
-#	############################### Ring cases ###############################
-#    print_str('%s ', rabbit(sint(18446744073709551615), sint(0)).reveal() == 1)
-#    print_str('%s ', rabbit(sint(0), sint(18446744073709551615)).reveal() == 0)
-#    # 2**63 is considered to be positive
-#    print_str('%s ', rabbit(sint(9223372036854775808), sint(0)).reveal() == 0)
-#    # 2**63-1 is positive
-#    print_str('%s ', rabbit(sint(9223372036854775807), sint(0)).reveal() == 0)
-#    print_str('%s ', rabbit(sint(0), sint(9223372036854775807)).reveal() == 1)
-#    # 2**63+1 is negative
-#    print_str('%s ', rabbit(sint(9223372036854775809), sint(0)).reveal() == 1)
-#    print_str('%s ', rabbit(sint(0), sint(9223372036854775809)).reveal() == 0)
-#else:
-#	############################### Field cases ###############################
-#    print_str('%s ', rabbit(sint(18446744073709551555), sint(0)).reveal() == 1)
-#    print_str('%s ', rabbit(sint(1), sint(18446744073709551556)).reveal() == 0)
-#    # (p-1)/2 is considered to be positive
-#    print_str('%s ', rabbit(sint(9223372036854775778), sint(0)).reveal() == 0)
-#    print_str('%s ', rabbit(sint(0), sint(9223372036854775778)).reveal() == 1)
-#    # (p-1)/2-1 is positive
-#    print_str('%s ', rabbit(sint(9223372036854775777), sint(0)).reveal() == 0)
-#    print_str('%s ', rabbit(sint(0), sint(9223372036854775777)).reveal() == 1)
-#    # (p-1)/2+1 is negative
-#    print_str('%s ', rabbit(sint(9223372036854775779), sint(0)).reveal() == 1)
-#    print_str('%s ', rabbit(sint(0), sint(9223372036854775779)).reveal() == 0)
-#
-#
-#print_ln('')
+print_str('%s ', rabbit(sint(1), sint(0)).reveal() == 0)
+print_str('%s ', rabbit(sint(0), sint(-1)).reveal() == 0)
+print_str('%s ', rabbit(sint(-1), sint(0)).reveal() == 1)
+
+if (program.options.ring):
+	############################### Ring cases ###############################
+    print_str('%s ', rabbit(sint(18446744073709551615), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(18446744073709551615)).reveal() == 0)
+    # 2**63 is considered to be positive
+    print_str('%s ', rabbit(sint(9223372036854775808), sint(0)).reveal() == 0)
+    # 2**63-1 is positive
+    print_str('%s ', rabbit(sint(9223372036854775807), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775807)).reveal() == 1)
+    # 2**63+1 is negative
+    print_str('%s ', rabbit(sint(9223372036854775809), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775809)).reveal() == 0)
+else:
+	############################### Field cases ###############################
+    print_str('%s ', rabbit(sint(18446744073709551555), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(1), sint(18446744073709551556)).reveal() == 0)
+    # (p-1)/2 is considered to be positive
+    print_str('%s ', rabbit(sint(9223372036854775778), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775778)).reveal() == 1)
+    # (p-1)/2-1 is positive
+    print_str('%s ', rabbit(sint(9223372036854775777), sint(0)).reveal() == 0)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775777)).reveal() == 1)
+    # (p-1)/2+1 is negative
+    print_str('%s ', rabbit(sint(9223372036854775779), sint(0)).reveal() == 1)
+    print_str('%s ', rabbit(sint(0), sint(9223372036854775779)).reveal() == 0)
+
+
+print_ln('')
