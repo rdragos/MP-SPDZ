@@ -7,6 +7,7 @@
 program.use_edabit(True)
 program.set_rabbit(True)
 from Compiler import util
+from Compiler import floatingpoint
 # util.tree_reduce(operator.mul, z))
 
 def RabbitBitDec(x, k):
@@ -35,8 +36,8 @@ def RabbitLT(R, x, k):
     z[k-1] = y[k-1]
     w[k-1] = y[k-1] ^ one
 
-    for i in range(k-1, 0, -1):
-        z[i-1] = y[i-1] * z[i]
+    y = y[::-1]
+    z = floatingpoint.PreOpL(floatingpoint.mul_op, y)[::-1]
 
     for i in range(k-1,0,-1): # no optimizing
         w[i-1] = z[i-1] ^ z[i]
