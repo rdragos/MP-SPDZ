@@ -315,8 +315,9 @@ void to_signed_bigint(bigint& ans, const gfp_<X, L>& x)
 {
     to_bigint(ans, x);
     // get sign and abs(x)
-    if (mpz_cmp(ans.get_mpz_t(), gfp_<X, L>::get_ZpD().pr_half.get_mpz_t()) > 0)
-        ans -= gfp_<X, L>::pr();
+    //TODO(Dragos) see if these break anything
+//    if (mpz_cmp(ans.get_mpz_t(), gfp_<X, L>::get_ZpD().pr_half.get_mpz_t()) > 0)
+//        ans -= gfp_<X, L>::pr();
 }
 
 #endif

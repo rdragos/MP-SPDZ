@@ -5,23 +5,17 @@
 
 program.use_edabit(True)
 program.set_rabbit(True)
-
 from Compiler import instructions_base
 vector_size = 10
-instructions_base.set_global_vector_size(vector_size)
 
 from Compiler import util
 from Compiler import floatingpoint
 
+use_preOpL = False
+use_preOpL2 = True
 
-use_preOpL = True
-use_preOpL2 = False
 
-
-def RabbitBitDec(x, k):
-    r_bits = [cint((x >> i) & 1) for i in range(k)]
-    return r_bits
-
+@vectorize
 def RabbitLT(R, x, k):
     """
     res = R <? x (logarithmic rounds version)
@@ -29,19 +23,17 @@ def RabbitLT(R, x, k):
     R: clear integer register
     x: array of secret bits
     """
-    R_bits = RabbitBitDec(R, k)
-    x_clear = [x[i].reveal() for i in range(k)]
-    y = [program.curr_block.new_reg('s') for i in range(k)]
-    z = [program.curr_block.new_reg('s') for i in range(k)]
-    w = [program.curr_block.new_reg('s') for i in range(k)]
-
-    one = sbits.get_type(vector_size)(1)
+    R_bits = cbits.bit_decompose_clear(R, 64)
+    y = [sbit() for i in range(k)]
+    z = [sbit() for i in range(k)]
+    w = [sbit() for i in range(k)]
 
     for i in range(k):
-        y[i] = x[i].bit_xor(R_bits[i]).bit_xor(one)
+        y[i] = x[i].bit_xor(R_bits[i])
+        y[i] = ~y[i]
 
     z[k-1] = y[k-1]
-    w[k-1] = y[k-1] ^ one
+    w[k-1] = ~y[k-1]
 
     y = y[::-1]
 
@@ -56,99 +48,80 @@ def RabbitLT(R, x, k):
     for i in range(k-1,0,-1): # no optimizing
         w[i-1] = z[i-1] ^ z[i]
 
-
-    total = program.curr_block.new_reg('s')
-    out = [program.curr_block.new_reg('s') for i in range(k)]
-    total = one
+    out = [sbit() for i in range(k)]
     for i in range(k):
-        out[i] = R_bits[i] & w[i];
+        out[i] = R_bits[i] & w[i]
 
-    for i in range(k):
+    total = out[0]
+    for i in range(1, k):
         total = total ^ out[i]
 
-    return 1 - total
+    return total
 
+@vectorize
 def customLTZ(s, a, k, kappa):
     """
     s = (a ?< 0)
 
     k: bit length of a
     """
-    if program.use_rabbit():
 
-        BIT_SIZE = 64
-        M = None; R = None; r = None; r_bits = None; 
-        length_eda = BIT_SIZE
+    BIT_SIZE = 64
+    M = None; R = None; r = None; r_bits = None; 
+    length_eda = BIT_SIZE
 
-        if (program.options.ring):
-            M = 2**(program.bit_length + 1)
-            R = 2**(program.bit_length)
-        else:
-            # length_eda = 64
-            M = program.P
-            R = (M - 1) // 2
+    if (program.options.ring):
+        M = 2**(program.bit_length + 1)
+        R = 2**(program.bit_length)
+    else:
+        # length_eda = 64
+        M = program.P
+        R = (M - 1) // 2
 
-        r, r_bits = sint.get_edabit(length_eda, True)
-        masked_a = (a + r).reveal()
-        masked_b = masked_a + M - R
+    r, r_bits = sint.get_edabit(length_eda, True)
+    masked_a = (a + r).reveal()
+    masked_b = masked_a + M - R
 
-        w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
-        w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
+    w = [None, None, None, None]
 
-#        w3 = (masked_b > 0)
-#        movs(s, sint.conv(w1 - w2 + w3))
-        # Can this be fixed?
-        w3 = cint(masked_b > 0)
-        print_ln("w3 = %s", w3)
-        w3_bits = cbits.get_type(vector_size)()
-        print_ln('w3_bits = %s', w3_bits)
+    w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
+    w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
-        cbits.conv_cint_vec(w3, *w3_bits)
-        movs(s, sint.conv(w1 - w2 + w3_bits))
+    # Can this be fixed?
+    w[3] = cint(masked_b > 0, size=vector_size)
+
+    w3_bits = cbits.bit_decompose_clear(w[3], 64)
+
+    movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
 
 def rabbit(a, b):
-    res = sint()
+    res = sint(size=vector_size)
     customLTZ(res, a-b, program.bit_length, None)
     return res
 
-#print_str('%s ', rabbitLT(sint(0), sint(1)).reveal() == 1)
+for i in range(-1, 2):
+    for j in range(-1, 2):
+        if i != j:
+            a = sint(i, size=vector_size)
+            b = sint(j, size=vector_size)
+            print_ln('%s', rabbit(a, b).reveal())
 
-a = sint(0)
-b = sint(1)
-print_ln('a = %s', a.reveal())
-print_ln('b = %s', b.reveal())
 
-print_str('%s ', rabbit(a, b).reveal())
-"""
-print_str('%s ', rabbit(sint(1), sint(0)).reveal() == 0)
-print_str('%s ', rabbit(sint(0), sint(-1)).reveal() == 0)
-print_str('%s ', rabbit(sint(-1), sint(0)).reveal() == 1)
+a = 18446744073709551555
+b = 0
+print_ln('%s ', rabbit(sint(a, vector_size), sint(b, vector_size)).reveal())
 
-if (program.options.ring):
-	############################### Ring cases ###############################
-    print_str('%s ', rabbit(sint(18446744073709551615), sint(0)).reveal() == 1)
-    print_str('%s ', rabbit(sint(0), sint(18446744073709551615)).reveal() == 0)
-    # 2**63 is considered to be positive
-    print_str('%s ', rabbit(sint(9223372036854775808), sint(0)).reveal() == 0)
-    # 2**63-1 is positive
-    print_str('%s ', rabbit(sint(9223372036854775807), sint(0)).reveal() == 0)
-    print_str('%s ', rabbit(sint(0), sint(9223372036854775807)).reveal() == 1)
-    # 2**63+1 is negative
-    print_str('%s ', rabbit(sint(9223372036854775809), sint(0)).reveal() == 1)
-    print_str('%s ', rabbit(sint(0), sint(9223372036854775809)).reveal() == 0)
-else:
-	############################### Field cases ###############################
-    print_str('%s ', rabbit(sint(18446744073709551555), sint(0)).reveal() == 1)
-    print_str('%s ', rabbit(sint(1), sint(18446744073709551556)).reveal() == 0)
-    # (p-1)/2 is considered to be positive
-    print_str('%s ', rabbit(sint(9223372036854775778), sint(0)).reveal() == 0)
-    print_str('%s ', rabbit(sint(0), sint(9223372036854775778)).reveal() == 1)
-    # (p-1)/2-1 is positive
-    print_str('%s ', rabbit(sint(9223372036854775777), sint(0)).reveal() == 0)
-    print_str('%s ', rabbit(sint(0), sint(9223372036854775777)).reveal() == 1)
-    # (p-1)/2+1 is negative
-    print_str('%s ', rabbit(sint(9223372036854775779), sint(0)).reveal() == 1)
-    print_str('%s ', rabbit(sint(0), sint(9223372036854775779)).reveal() == 0)
+a = 1
+b = 18446744073709551556
+print_ln('%s ', rabbit(sint(a, vector_size), sint(b, vector_size)).reveal())
 
-"""
-print_ln('')
+## (p-1)/2 is considered to be positive
+a = 9223372036854775778
+b = 0
+print_ln('%s ', rabbit(sint(a, vector_size), sint(b, vector_size)).reveal())
+
+a = 0
+b = 9223372036854775778
+print_ln('%s ', rabbit(sint(a, vector_size), sint(b, vector_size)).reveal())
+
+

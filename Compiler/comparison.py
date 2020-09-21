@@ -78,42 +78,6 @@ def LTZ(s, a, k, kappa):
     """
     from .types import sint, _bitint
     from .GC.types import sbitvec
-    if program.use_rabbit():
-
-        BIT_SIZE = 64
-        M = None; R = None; r = None; r_bits = None; 
-        length_eda = BIT_SIZE
-
-
-        if (program.options.ring):
-            # length_eda = program.bit_length + 1
-            M = 2**(program.bit_length + 1)
-            R = 2**(program.bit_length)
-        else:
-            # length_eda = 64
-            M = program.P
-            R = (M - 1) // 2
-            # M = 2**64
-            # R = 2**63
-            # print(R)
-            # print(M)
-            # print(length_eda)
-
-        r, r_bits = sint.get_edabit(length_eda, True)
-
-        masked_a = (a + r).reveal()
-        masked_b = masked_a + M - R
-
-        w1 = RabbitLT(masked_a, r_bits, BIT_SIZE)
-        w2 = RabbitLT(masked_b, r_bits, BIT_SIZE)
-
-        # Can this be fixed?
-        w3 = (masked_b < 0)
-
-        movs(s, sint.conv(w1 - w2 + w3))
-        return
-
-
 
     if program.use_split():
         movs(s, sint.conv(sbitvec(a, k).v[-1]))
@@ -313,6 +277,7 @@ def Mod2mField(a_prime, a, k, m, kappa, signed):
     c2m = program.curr_block.new_reg('c')
     c2k1 = program.curr_block.new_reg('c')
     PRandM(r_dprime, r_prime, r, k, m, kappa)
+    print(type(r_dprime), type(r_prime))
     ld2i(c2m, m)
     mulm(t[0], r_dprime, c2m)
     if signed:
