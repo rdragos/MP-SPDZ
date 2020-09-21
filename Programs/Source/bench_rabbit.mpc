@@ -1,7 +1,8 @@
-# ./compile.py -p 64 test_rabbit
 # ./Scripts/rep-field.sh test_rabbit -P 18446744073709551557
 # ./compile.py -R 64 test_rabbit
 # ./Scripts/ring.sh test_rabbit
+
+# ./compile.py -p 64 bench_rabbit 2048 1 1024
 
 program.use_edabit(True)
 program.set_rabbit(True)
@@ -10,8 +11,8 @@ from Compiler import instructions_base
 from Compiler import util
 from Compiler import floatingpoint
 
-use_preOpL = False
-use_preOpL2 = True
+use_preOpL = True
+use_preOpL2 = False
 
 @vectorize
 def RabbitLT(R, x, k):
@@ -85,9 +86,7 @@ def customLTZ(s, a, k, kappa):
     w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
     w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
 
-    # Can this be fixed?
     w[3] = cint(masked_b > 0)
-
     w3_bits = cbits.bit_decompose_clear(w[3], 64)
 
     movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
@@ -127,5 +126,4 @@ def _(base, m):
     print("m = ", m)
     @for_range(l)
     def _(i):
-#        rabbit(sint(0, size=m), sint(1, size=m)).store_in_mem(base)
-        print_ln('%s', rabbit(sint(1, size=m), sint(0, size=m)).reveal())
+        rabbit(sint(1, size=m), sint(0, size=m)).store_in_mem(base)
