@@ -186,6 +186,7 @@ inline void IntBase<unsigned char>::randomize(PRNG& G)
 template<int X, int L>
 Integer::Integer(const gfp_<X, L>& x)
 {
+  //TODO: Should have a special constructor with no sign
   to_signed_bigint(bigint::tmp, x);
   *this = bigint::tmp;
 }

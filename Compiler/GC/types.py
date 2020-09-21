@@ -390,7 +390,6 @@ class sbits(bits):
             mul_bits = [self if b else zero for b in bits]
             return self.bit_compose(mul_bits)
         else:
-            print(self.n, other)
             return NotImplemented
     def __lshift__(self, i):
         return self.bit_compose([sbit(0)] * i + self.bit_decompose()[:self.max_length-i])
