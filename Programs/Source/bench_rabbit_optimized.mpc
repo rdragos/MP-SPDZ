@@ -59,41 +59,41 @@ def RabbitLT(R, x, k):
 
 @vectorize
 def customLTZ(s, a, k, kappa):
+    BIT_SIZE = 64
+    M = None; R = None;
+    length_eda = BIT_SIZE
+
+    if (program.options.ring):
+        M = 2**(program.bit_length + 1)
+        R = 2**(program.bit_length)
+    else:
+        # length_eda = 64
+        M = P_VALUES[64]
+        R = (M - 1) // 2
+    r, r_bits = sint.get_edabit(length_eda, True)
+    masked_a = (a + r).reveal()
+    masked_b = masked_a + M - R
+
+    w = [None, None, None, None]
+
+    w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
+    w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
+
+    w[3] = cint(masked_b > 0)
+    w3_bits = cbits.bit_decompose_clear(w[3], 64)
+
+    movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
+
+
+
+@vectorize
+def customLTZC(s, a, k, kappa):
     """
-    s = (a ?< 0)
+    s = (a ?< 2**(k-1))
 
     k: bit length of a
     """
 
-####################################################################################
-####################################################################################
-    # BIT_SIZE = 64
-    # M = None; R = None;
-    # length_eda = BIT_SIZE
-
-    # if (program.options.ring):
-    #     M = 2**(program.bit_length + 1)
-    #     R = 2**(program.bit_length)
-    # else:
-    #     # length_eda = 64
-    #     M = P_VALUES[64]
-    #     R = (M - 1) // 2
-    # r, r_bits = sint.get_edabit(length_eda, True)
-    # masked_a = (a + r).reveal()
-    # masked_b = masked_a + M - R
-
-    # w = [None, None, None, None]
-
-    # w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
-    # w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
-
-    # w[3] = cint(masked_b > 0)
-    # w3_bits = cbits.bit_decompose_clear(w[3], 64)
-
-    # movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
-
-####################################################################################
-####################################################################################
     BIT_SIZE = 64
     M = None; R = None; r = None; r_bits = None; 
     length_eda = BIT_SIZE
@@ -102,49 +102,49 @@ def customLTZ(s, a, k, kappa):
         M = 2**(program.bit_length + 1)
         R = 2**(program.bit_length)
     else:
-        M = program.P
-        R = (M - 1) // 2
+        raise Exception("Got a problem here")
 
     r, r_bits = sint.get_edabit(length_eda, True)
     masked_a = (a + r).reveal()
 
 
-
-    if (program.options.ring):
-        #Check MSB and LSB
-        masked_a += 1
-        for i in range(k):
-            r_bits[i] = ~r_bits[i]
-        masked_a_bits = cbits.bit_decompose_clear(masked_a, 64)
-        secret = r_bits[0].bit_adder(r_bits, masked_a_bits)
-        movs(s, sint.conv(secret[-1]))
-
-    else:
-        masked_b = masked_a + M - R
-
-        w = [None, None, None, None]
-
-        w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
-        w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
-
-        w[3] = cint(masked_b > 0)
-        w3_bits = cbits.bit_decompose_clear(w[3], 64)
-
-        movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
-
-
+    #Check MSB and LSB
+    masked_a += 1
+    for i in range(k):
+        r_bits[i] = ~r_bits[i]
+    masked_a_bits = cbits.bit_decompose_clear(masked_a, 64)
+    secret = r_bits[0].bit_adder(r_bits, masked_a_bits)
+    movs(s, sint.conv(secret[-1]))
 
 
 @vectorize
-def rabbit(a, b):
+def rabbit(a):
     res = sint()
-    customLTZ(res, a-b, program.bit_length, None)
+    customLTZ(res, a, program.bit_length, None)
+    return res
+
+@vectorize
+def rabbitLTC(a):
+    res = sint()
+    customLTZC(res, a, program.bit_length, None)
     return res
 
 
-m=2
-print_ln("%s", rabbit(sint(0, size=m), sint(1, size=m)).reveal())
+m=10
+#for i in range(10):
+#    print_str("%s", rabbitLTC(sint(i, size=m)).reveal())
+#print_ln('')
+#for i in range(10):
+#    print_str("%s", rabbitLTC(sint(2**63 + i, size=m)).reveal())
+#
 
+values = [2 ** 63 + 1, 2**63 + 2, 0, 1, 2, 3]
+for a in values:
+#    print_ln('%s', a)
+#    print_str("%s", rabbit(sint(a, size=m)).reveal())
+    print_ln('')
+    print_str("%s", rabbitLTC(sint(a, size=m)).reveal())
+    print_ln('')
 
 # n_threads = 1
 
