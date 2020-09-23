@@ -5,14 +5,14 @@
 # ./compile.py -p 64 bench_rabbit 2048 1 1024
 
 program.use_edabit(True)
-program.set_rabbit(True)
 from Compiler import instructions_base
 
 from Compiler import util
 from Compiler import floatingpoint
+from Compiler.config import P_VALUES
 
-use_preOpL = True
-use_preOpL2 = False
+use_preOpL = False
+use_preOpL2 = True
 
 @vectorize
 def RabbitLT(R, x, k):
@@ -66,7 +66,7 @@ def customLTZ(s, a, k, kappa):
     """
 
     BIT_SIZE = 64
-    M = None; R = None; r = None; r_bits = None; 
+    M = None; R = None;
     length_eda = BIT_SIZE
 
     if (program.options.ring):
@@ -74,9 +74,8 @@ def customLTZ(s, a, k, kappa):
         R = 2**(program.bit_length)
     else:
         # length_eda = 64
-        M = program.P
+        M = P_VALUES[64]
         R = (M - 1) // 2
-
     r, r_bits = sint.get_edabit(length_eda, True)
     masked_a = (a + r).reveal()
     masked_b = masked_a + M - R
@@ -98,32 +97,35 @@ def rabbit(a, b):
     customLTZ(res, a-b, program.bit_length, None)
     return res
 
-n = 2**10
-res = sint.Array(n)
 n_threads = 1
 
 l = 1
-
+n=2**20
 try:
-    n_threads = int(program.args[2])
+    n_threads = int(program.args[1])
 except:
     pass
 
 try:
-    n = int(program.args[3])
+    n = int(program.args[2])
 except:
     pass
 
 try:
-    l = int(program.args[4])
+    l = int(program.args[3])
 except:
     pass
 
+res = sint.Array(n)
 print('%d comparison in %d threads and %d rounds' % (n, n_threads, l))
 
+start_timer(2)
 @multithread(n_threads, n)
 def _(base, m):
     print("m = ", m)
     @for_range(l)
     def _(i):
         rabbit(sint(1, size=m), sint(0, size=m)).store_in_mem(base)
+
+stop_timer(2)
+
