@@ -43,8 +43,6 @@ def RabbitLT(R, x, k):
     def and_op(x, y, z=None):
         return x & y
 
-    # print(type(y[0] & y[1]))
-    # print(type(z[0]))
 
     if use_preOpL:
         z = floatingpoint.PreOpL(and_op, y)[::-1]
@@ -97,14 +95,6 @@ def customLTZ(s, a, k, kappa):
 
 
 
-# def print_bits(bits):
-#     k = len(bits)
-#     r_clear = [program.curr_block.new_reg('s') for i in range(k)]
-#     for i in range(k):
-#         r_clear[i] = bits[i].reveal()
-#     for i in range(k):
-#         r_clear[i].print_reg_plain()
-
 def print_bits(bits):
     for i in range(len(bits)):
         print_str('%s', bits[i].reveal().to_regint_by_bit())
@@ -115,91 +105,6 @@ def print_register_bits(bits):
 
 
 
-################################ Carry Rabbit ################################
-# @vectorize
-# def CarryOutRabbit(res, a, b):
-#     """
-#     res = last carry bit in addition of a and b
-
-#     a: array of clear bits
-#     b: array of secret bits (same length as a)
-#     c: initial carry-in bit
-#     """
-#     # from .types import sint
-#     k = len(a)
-#     movs(res, sint.conv((CarryOutRawRabbit(a, b) ^ a[k-1] ^ b[k-1])))
-
-# @vectorize
-# def CarryOutRawRabbit(a, b):
-#     assert len(a) == len(b)
-#     k = len(a)
-#     # from . import types
-#     d = [program.curr_block.new_reg('s') for i in range(k)]
-#     # s = [program.curr_block.new_reg('s') for i in range(3)]
-
-#     w = [sbit() for i in range(k)]
-#     for i in range(k):
-#         w[i] = b[i].half_adder(a[i])[0]
-#     print_bits(w)
-#     print_ln(' :d[0]')
-#     for i in range(k):
-#         w[i] = b[i].half_adder(a[i])[1]
-#     print_bits(w)
-#     print_ln(' :d[1]')
-
-#     for i in range(k):
-#         d[i] = list(b[i].half_adder(a[i]))
-
-
-#     d[-1][0] = sbit(1)
-#     d[-1][1] = sbit(0)
-#     print_bits([d[i][0] for i in range(k)])
-#     print_ln(' :d[00]')
-
-#     print_bits([d[i][1] for i in range(k)])
-#     print_ln(' :d[01]')
-
-
-#     # s[0] = d[-1][0].bit_and(c)
-#     # s[1] = d[-1][1] + s[0]
-#     # d[-1][1] = s[1]
-#     # print(len(d))
-#     return CarryOutAuxRabbit(d)
-
-
-# @vectorize   
-# def CarryOutAuxRabbit(a):
-
-#     def carry_basic(b, a):
-#         t = [program.curr_block.new_reg('s') for i in range(2)]
-#         t[0] = a[0].bit_and(b[0])
-#         t[1] = a[0].bit_and(b[1]) + a[1]
-#         return t[0], t[1]
-
-#     k = len(a)
-#     assert k == 2**(int(ceil(log(k,2))))
-#     u = [None]*(k//2)
-#     # a = a[::-1]
-#     if k > 1:
-#         for i in range(k//2):
-#             u[i] = carry_basic(a[2*i+1], a[2*i])
-
-#         w = [sbit() for i in range(k//2)]
-#         for i in range(k//2):
-#             w[i] = u[i][0]
-#         print_bits(w)
-#         print_ln(' :P')
-#         for i in range(k//2):
-#             w[i] = u[i][1]
-#         print_bits(w)
-#         print_ln(' :G')
-
-#         return CarryOutAuxRabbit(u)
-#     else:
-#         # print(len(a[0]))
-#         return a[0][1]
-
-##############################################################################
 ################################ Carry Babbit ################################
 
 @vectorize
@@ -209,15 +114,11 @@ def carry_babbit(b, a, compute_p=True):
         b = (p2, g2)
         (p,g) = (p_2, g_2)o(p_1, g_1) -> (p_1 & p_2, g_2 | (p_2 & g_1))
     """
-    if compute_p:
-        t1 = a[0].bit_and(b[0])
-    else:
-        t1 = None
+    t1 = a[0].bit_and(b[0])
     t2 = a[1] + a[0].bit_and(b[1])
     return (t1, t2)
 
-# from WP9 report
-# length of a is even
+
 @vectorize
 def CarryOutAuxBabbit(a, kappa):
     k = len(a)
@@ -229,25 +130,7 @@ def CarryOutAuxBabbit(a, kappa):
     a = a[::-1]
     if k > 1:
         for i in range(k//2):
-            u[i] = carry_babbit(a[2*i], a[2*i+1],True)
-
-        w = [sbit() for i in range(k//2)]
-        for i in range(k//2):
-            w[i] = u[i][0]
-
-        # print(k)
-        # for i in range(k):
-        #     print(type(a[i][0]), i)
-        #     # print(i)
-        # print(type(u[0][0]))
-        # print(type(w[0]))
-
-        print_register_bits(w)
-        print_ln(' :P')
-        for i in range(k//2):
-            w[i] = u[i][1]
-        print_register_bits(w)
-        print_ln(' :G')
+            u[i] = carry_babbit(a[2*i], a[2*i+1], True)
         return CarryOutAuxBabbit(u[:k//2][::-1], kappa)
     else:
         return a[0][1]
@@ -262,16 +145,6 @@ def CarryOutRawBabbit(a, b, c=0):
     for i in range(k):
         d[i] = list(b[i].half_adder(a[i]))
 
-    print_bits([d[i][0] for i in range(k)])
-    print_ln(' :d[00]')
-
-    print_bits([d[i][1] for i in range(k)])
-    print_ln(' :d[01]')
-    # s[0] = d[-1][0].bit_and(c)
-    # s[1] = d[-1][1] + s[0]
-    # d[-1][1] = s[1]
-    d[-1][0] = sbit(1)
-    d[-1][1] = sbit(0)
     return CarryOutAuxBabbit(d[::-1], None)
 
 
@@ -287,7 +160,6 @@ def CarryOutBabbit(res, a, b, d, c=0, kappa=None):
     """
     k = len(a)
     movs(res, sint.conv((CarryOutRawBabbit(a, b, c) ^ d)))
-    # movs(res, sint.conv(CarryOutRawBabbit(a, b, c)))
 
 
 
@@ -302,43 +174,19 @@ def customLTZC(s, a, k, kappa):
 
     k: bit length of a
     """
-
     BIT_SIZE = 64
     M = None; R = None; r = None; r_bits = None; 
     length_eda = BIT_SIZE
 
-    # r_clear = -1816518003959084786
-    # r_bits = [ (r_clear >> i) & 1 for i in range(BIT_SIZE)]
-    # r = sint(r_clear, size=vector_size)
-    # r_bits = [sbits.get_type(vector_size)(r_bits[i]) for i in range(BIT_SIZE)]
     r, r_bits = sint.get_edabit(length_eda, True)
     masked_a = (a + r).reveal()
     clear_a = a.reveal()
 
-
     #Check MSB and LSB
     masked_a += 1
-    print_bits(r_bits)
-    print_ln(' :r')
-    clear_a_bits = cbits.bit_decompose_clear(clear_a, BIT_SIZE)
-    # print(len(clear_a_bits))
-    for i in range(BIT_SIZE):
-        clear_a_bits[i].print_reg_plain()
-    print_ln(" :x")
-    print_str("LSB ........................................................ MSB")
-    print_ln(' ')
-    print_ln(' ')
-
     for i in range(BIT_SIZE):
         r_bits[i] = ~r_bits[i]
     masked_a_bits = cbits.bit_decompose_clear(masked_a, BIT_SIZE)
-    
-    for i in range(BIT_SIZE):
-        masked_a_bits[i].print_reg_plain()
-    print_ln(" :a+1")
-    print_bits(r_bits)
-    print_ln(" :~r")
-
 
     d = [None] * BIT_SIZE
     for i in range(k):
@@ -350,58 +198,11 @@ def customLTZC(s, a, k, kappa):
         t[1] = a[0].bit_and(b[1]) + a[1]
         return t[0], t[1]
 
-    # def cpo_op(d2, d1, z=None):
-    #     return (d2[0] & d1[0], d2[1].bit_and(d2[0] & d1[1]))
-
-    # pg = [None] * k
-    # pg[0] = d[0]
-    # print(len(d))
-    # print(len(pg))
-
-    pg = floatingpoint.PreOpL(cpo_op, d)
-    # print(len(d))
-    # print(len(pg))
-
-    print_bits([pg[i][0] for i in range(k)])
-    print_ln(' :pg[0]')
-
-    print_bits([pg[i][1] for i in range(k)])
-    print_ln(' :pg[1]')
-
-    movs(s, sint.conv(r_bits[k-1] ^ pg[k-2][1] ^ masked_a_bits[k-1]))
-
-    print_ln(' ')
-    print_ln(' ')
-    t = sint()
-    # CarryOutRabbit(t, masked_a_bits, r_bits)
     d = r_bits[k-1] ^ masked_a_bits[k-1]
-
-
-    # masked_a_bits[k-1] = cbit()
-    print(type(masked_a_bits[k-1]))
+    masked_a_bits[k-1] = masked_a_bits[k-1].long_one()
 
     r_bits[k-1] = r_bits[k-1] ^ r_bits[k-1]
-    CarryOutBabbit(t, masked_a_bits, r_bits, d)
-    print_ln("t = %s", t.reveal())
-
-    # print_ln(' ')
-    # print_ln(' ')
-    # print_ln(' ')
-    # print_ln(' ')
-    # print_ln(' ')
-    # print_ln(' ')
-
-    # pairs = [ (0, 0), (0, 1), (1, 0), (1, 1)]
-    # for p1 in pairs:
-    #     for p2 in pairs:
-    #         p1_bit = [sbit(p1[0]), sbit(p1[1])]
-    #         p2_bit = [sbit(p2[0]), sbit(p2[1])]
-    #         p = carry_babbit(p1_bit, p2_bit)
-    #         print_str("%s %s %s", p1[0], p2[0], p[0].reveal())
-    #         print_ln(' ')
-    #         print_str("%s %s %s", p1[1], p2[1], p[1].reveal())
-    #         print_ln(' ')
-    #         print_ln(' ')
+    CarryOutBabbit(s, masked_a_bits, r_bits, d)
 
 
 
@@ -431,7 +232,7 @@ values = [2 ** 63 + 1, 2**63 + 2, 0, 1, 2, 3]
 for a in values:
 #    print_ln('%s', a)
     # print_str("%s", rabbit(sint(a, size=m)).reveal())
-    print_ln('\n')
+    # print_ln('\n')
     print_str("RabbitLTZC answer: %s", rabbitLTC(sint(a, size=m)).reveal())
     print_ln('\n')  
 
