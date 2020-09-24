@@ -39,6 +39,9 @@ def RabbitLT(R, x, k):
     def and_op(x, y, z=None):
         return x & y
 
+    # print(type(y[0] & y[1]))
+    # print(type(z[0]))
+
     if use_preOpL:
         z = floatingpoint.PreOpL(and_op, y)[::-1]
     elif use_preOpL2:
@@ -57,6 +60,8 @@ def RabbitLT(R, x, k):
 
     return total
 
+
+from Compiler.comparison import *
 @vectorize
 def customLTZ(s, a, k, kappa):
     BIT_SIZE = 64
@@ -113,8 +118,160 @@ def customLTZC(s, a, k, kappa):
     for i in range(k):
         r_bits[i] = ~r_bits[i]
     masked_a_bits = cbits.bit_decompose_clear(masked_a, 64)
-    secret = r_bits[0].bit_adder(r_bits, masked_a_bits)
-    movs(s, sint.conv(secret[-1]))
+    
+
+####################################################################################
+#################################### Attempt 1 #####################################
+####################################################################################
+
+    # # a[i] --> masked_a_bits[i]
+    # # b[i] --> r_bits[i]
+    # d = [[sbit(), sbit()] for i in range(k)]
+    # for i in range(k):
+    #     # d[i] = masked_a_bits[i] ^ r_bits[i]
+    #     if masked_a_bits[i] == 1:
+    #         d[i] = [~r_bits[i], r_bits[i]]
+    #     else:
+    #         d[i] = [r_bits[i], sbit(0)]
+
+    # def cpo_op(p2, g2, p1, g1, z=None):
+    #     return p1 & p2, g2 | (p2 & g1)
+
+    # c = [sbit() for i in range(k)]
+    # if use_preOpL:
+    #     c = floatingpoint.PreOpL(cpo_op, d)
+    # elif use_preOpL2:
+    #     c = floatingpoint.PreOpL2(cpo_op, d)
+
+    # s_bits = [sbit() for i in range(k)]
+    # if masked_a_bits[0] == 1:
+    #     s_bits[0] = ~r_bits[0]
+    # else:
+    #     s_bits[0] = r_bits[0]
+
+    # for i in range(1, k, 1):
+    #     s_bits[i] = masked_a_bits[i] ^ r_bits[i] ^ c[i-1]
+
+    # # Lines 141 to 147 can be replaced by a single call to line 147 with i=k-1
+
+    # # secret = r_bits[0].bit_adder(r_bits, masked_a_bits)
+    # # movs(s, sint.conv(secret[-1]))
+    # movs(s, s_bits[-1])
+
+
+####################################################################################
+#################################### Attempt 2 #####################################
+####################################################################################
+
+    # smallP = [sbit() for i in range(k)]
+    # smallG = [sbit() for i in range(k)]
+    # for i in range(k):
+    #     # d[i] = masked_a_bits[i] ^ r_bits[i]
+    #     if masked_a_bits[i] == 1:
+    #         smallP[i] = ~r_bits[i]
+    #         smallG[i] = r_bits[i]
+    #     else:
+    #         smallP[i] = r_bits[i]
+    #         smallG[i] = sbit(0)
+
+    # def cpo_op_p(p2, g2, p1, g1, z=None):
+    #     return p1 & p2
+
+    # def cpo_op_g(p2, g2, p1, g1, z=None):
+    #     return g2 | (p2 & g1)
+
+    # bigP = [sbit() for i in range(k)]
+    # bigG = [sbit() for i in range(k)]
+
+    # bigP[0] = smallP[0]
+    # bigG[0] = smallG[0]
+
+    # for i in range(1,k,1):
+    #     bigP[i] = cpo_op_p(smallP[i], smallG[i], bigP[i-1], bigG[i-1])
+    #     bigG[i] = cpo_op_g(smallP[i], smallG[i], bigP[i-1], bigG[i-1])
+
+    # if masked_a_bits[k-1] == 1:
+    #     movs(s, sint.conv(~r_bits[k-1] ^ pg[k-2][1]))
+    # else:
+    #     movs(s, sint.conv(r_bits[k-1] ^ pg[k-2][1]))
+
+
+
+####################################################################################
+#################################### Attempt 3 #####################################
+####################################################################################
+
+    # d = [None] * k
+    # for i in range(k):
+    #     if masked_a_bits[i] == 1:
+    #         d[i] = (~r_bits[i], r_bits[i])
+    #     else:
+    #         d[i] = (r_bits[i], sbit(0))    
+
+    # def cpo_op(d2, d1, z=True):
+    #     return (d2[0] & d1[0], d2[1] | (d2[0] & d1[1]))
+
+    # pg = floatingpoint.PreOpL(cpo_op, d)
+
+    # if masked_a_bits[k-1] == 1:
+    #     movs(s, sint.conv(~r_bits[k-1] ^ pg[k-2][1]))
+    # else:
+    #     movs(s, sint.conv(r_bits[k-1] ^ pg[k-2][1]))
+
+
+
+####################################################################################
+#################################### Attempt 4 #####################################
+####################################################################################
+
+    # d = [None] * k
+    # pg = [None] * k
+    # for i in range(k):
+    #     if masked_a_bits[i] == 1:
+    #         d[i] = (~r_bits[i], r_bits[i])
+    #         pg[i] = (~r_bits[i], r_bits[i])
+    #     else:
+    #         d[i] = (~r_bits[i], r_bits[i])
+    #         pg[i] = (~r_bits[i], r_bits[i])
+    #         # d[i] = (r_bits[i], sbit(0))    
+    #         # pg[i] = (r_bits[i], sbit(0))
+
+    # def cpo_op(d2, d1, z=None):
+    #     # return (d1[0] & d1[1], None)
+    #     # return (d2[0] & d1[0], d2[0] & d1[1])
+    #     t = d2[0].bit_and(d1[1])
+    #     # return (d2[0] & d1[0], d2[1].bit_or(d2[0].bit_and(d1[1])))
+    #     return (d2[0] & d1[0], d2[1].bit_xor(t).bit_xor(d2[1].bit_and(t)))
+
+    # pg = CarryOutAux(d[::-1], None)
+
+    # # print(type(d[0][0]))
+    # # print(type(d[0][1]))
+    # # c = d[0][0] & d[0][1]
+    # # c = cpo_op(d[0], d[0])
+
+    # # pg = floatingpoint.PreOpL(cpo_op, d)
+
+    # # for i in range(1,k,1):
+    # #     pg[i] = cpo_op(d[i], pg[i-1])
+    
+    # if masked_a_bits[k-1] == 1:
+    #     movs(s, sint.conv(~r_bits[k-1] ^ pg[k-2][1]))
+    # else:
+    #     movs(s, sint.conv(r_bits[k-1] ^ pg[k-2][1]))
+
+
+####################################################################################
+#################################### Attempt 5 #####################################
+####################################################################################
+
+    # use KOpL(op, a):
+
+####################################################################################
+#################################### Attempt 6 #####################################
+####################################################################################
+
+    CarryOut(s, masked_a_bits, r_bits)
 
 
 @vectorize
@@ -141,7 +298,7 @@ m=10
 values = [2 ** 63 + 1, 2**63 + 2, 0, 1, 2, 3]
 for a in values:
 #    print_ln('%s', a)
-#    print_str("%s", rabbit(sint(a, size=m)).reveal())
+    # print_str("%s", rabbit(sint(a, size=m)).reveal())
     print_ln('')
     print_str("%s", rabbitLTC(sint(a, size=m)).reveal())
     print_ln('')
