@@ -61,7 +61,7 @@ def RabbitLT(R, x, k):
     return total
 
 
-from Compiler.comparison import *
+# from Compiler.comparison import *
 @vectorize
 def customLTZ(s, a, k, kappa):
     BIT_SIZE = 64
@@ -91,10 +91,96 @@ def customLTZ(s, a, k, kappa):
 
 
 
+
+
+def print_bits(bits):
+    k = len(bits)
+    r_clear = [program.curr_block.new_reg('s') for i in range(k)]
+    for i in range(k):
+        r_clear[i] = bits[i].reveal()
+    for i in range(k):
+        r_clear[i].print_reg_plain()
+
+
+
+
+def CarryOutRabbit(res, a, b):
+    """
+    res = last carry bit in addition of a and b
+
+    a: array of clear bits
+    b: array of secret bits (same length as a)
+    c: initial carry-in bit
+    """
+    # from .types import sint
+    k = len(a)
+    movs(res, sint.conv(~(CarryOutRawRabbit(a, b) ^ a[k-1] ^ b[k-1])))
+
+def CarryOutRawRabbit(a, b):
+    assert len(a) == len(b)
+    k = len(a)
+    # from . import types
+    d = [program.curr_block.new_reg('s') for i in range(k)]
+    # s = [program.curr_block.new_reg('s') for i in range(3)]
+
+    # w = [sbit() for i in range(k)]
+    # for i in range(k):
+    #     w[i] = b[i].half_adder(a[i])[0]
+    # print_bits(w)
+    # print_ln(' :d[0]')
+    # for i in range(k):
+    #     w[i] = b[i].half_adder(a[i])[1]
+    # print_bits(w)
+    # print_ln(' :d[1]')
+
+    for i in range(k):
+        d[i] = list(b[i].half_adder(a[i]))
+    # s[0] = d[-1][0].bit_and(c)
+    # s[1] = d[-1][1] + s[0]
+    # d[-1][1] = s[1]
+    # print(len(d))
+    return CarryOutAuxRabbit(d)
+
+from math import log, ceil    
+def CarryOutAuxRabbit(a):
+
+    def carry_basic(b, a):
+        t = [program.curr_block.new_reg('s') for i in range(2)]
+        t[0] = a[0].bit_and(b[0])
+        t[1] = a[0].bit_and(b[1]) + a[1]
+        return t[0], t[1]
+
+    k = len(a)
+    assert k == 2**(int(ceil(log(k,2))))
+    u = [None]*(k//2)
+    # a = a[::-1]
+    if k > 1:
+        for i in range(k//2):
+            u[i] = carry_basic(a[2*i+1], a[2*i])
+
+        # w = [sbit() for i in range(k//2)]
+        # for i in range(k//2):
+        #     w[i] = u[i][0]
+        # print_bits(w)
+        # print_ln(' :P')
+        # for i in range(k//2):
+        #     w[i] = u[i][1]
+        # print_bits(w)
+        # print_ln(' :G')
+
+        return CarryOutAuxRabbit(u)
+    else:
+        # print(len(a[0]))
+        return a[0][0]
+
+
+
+
 @vectorize
 def customLTZC(s, a, k, kappa):
     """
     s = (a ?< 2**(k-1))
+    No condition such as the above required 
 
     k: bit length of a
     """
@@ -111,14 +197,34 @@ def customLTZC(s, a, k, kappa):
 
     r, r_bits = sint.get_edabit(length_eda, True)
     masked_a = (a + r).reveal()
+    clear_a = a.reveal()
 
 
     #Check MSB and LSB
     masked_a += 1
-    for i in range(k):
+    # print_bits(r_bits)
+    # print_ln(' :r')
+    # clear_a_bits = cbits.bit_decompose_clear(clear_a, BIT_SIZE)
+    # print(len(clear_a_bits))
+    # for i in range(BIT_SIZE):
+    #     clear_a_bits[i].print_reg_plain()
+    # print_ln(" :x")
+    # print_str("LSB ........................................................ MSB")
+    # print_ln(' ')
+    # print_ln(' ')
+
+    # r_bits[0].reveal().print_reg("r")
+    for i in range(BIT_SIZE):
         r_bits[i] = ~r_bits[i]
-    masked_a_bits = cbits.bit_decompose_clear(masked_a, 64)
+    masked_a_bits = cbits.bit_decompose_clear(masked_a, BIT_SIZE)
+    # print(len(masked_a_bits))
     
+    # for i in range(BIT_SIZE):
+    #     masked_a_bits[i].print_reg_plain()
+    # print_ln(" :a+1")
+    # print_bits(r_bits)
+    # print_ln(" :~r")
+
 
 ####################################################################################
 #################################### Attempt 1 #####################################
@@ -271,7 +377,7 @@ def customLTZC(s, a, k, kappa):
 #################################### Attempt 6 #####################################
 ####################################################################################
 
-    CarryOut(s, masked_a_bits, r_bits)
+    CarryOutRabbit(s, masked_a_bits, r_bits)
 
 
 @vectorize
@@ -296,12 +402,16 @@ m=10
 #
 
 values = [2 ** 63 + 1, 2**63 + 2, 0, 1, 2, 3]
+# values = [-1]
 for a in values:
 #    print_ln('%s', a)
     # print_str("%s", rabbit(sint(a, size=m)).reveal())
-    print_ln('')
+    print_ln(' ')
     print_str("%s", rabbitLTC(sint(a, size=m)).reveal())
-    print_ln('')
+    print_ln(' ')
+    # print_ln('\n')
+    # print_str("\n\nRabbitLTZC answer: %s", rabbitLTC(sint(a, size=m)).reveal())
+    # print_ln('\n')
 
 # n_threads = 1
 
