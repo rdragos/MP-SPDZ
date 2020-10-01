@@ -4,6 +4,7 @@
  */
 
 #include "OnlineOptions.h"
+#include "Math/gf2n.h"
 
 using namespace std;
 
@@ -11,6 +12,7 @@ OnlineOptions::OnlineOptions() : playerno(-1)
 {
     interactive = false;
     lgp = 128;
+    lg2 = gf2n::default_degree();
     live_prep = true;
 }
 
@@ -38,6 +40,15 @@ OnlineOptions::OnlineOptions(ez::ezOptionParser& opt, int argc,
           "--lgp" // Flag token.
     );
     opt.add(
+          to_string(gf2n::default_degree()).c_str(), // Default.
+          0, // Required?
+          1, // Number of args expected.
+          0, // Delimiter if expecting multiple args.
+          ("Bit length of GF(2^n) field (default: " + to_string(gf2n::default_degree()) + ")").c_str(), // Help description.
+          "-lg2", // Flag token.
+          "--lg2" // Flag token.
+    );
+    opt.add(
             "", // Default.
             0, // Required?
             0, // Number of args expected.
@@ -60,6 +71,7 @@ OnlineOptions::OnlineOptions(ez::ezOptionParser& opt, int argc,
 
     interactive = opt.isSet("-I");
     opt.get("--lgp")->getInt(lgp);
+    opt.get("--lg2")->getInt(lg2);
     live_prep = not opt.get("-F")->isSet;
 
     opt.resetArgs();

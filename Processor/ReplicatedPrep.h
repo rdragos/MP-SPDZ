@@ -32,7 +32,7 @@ protected:
 public:
     int buffer_size;
 
-    BufferPrep(DataPositions& usage) : Preprocessing<T>(usage), buffer_size(10000) {}
+    BufferPrep(DataPositions& usage) : Preprocessing<T>(usage), buffer_size(100000) {}
     virtual ~BufferPrep() {}
 
     void get_three_no_count(Dtype dtype, T& a, T& b, T& c);

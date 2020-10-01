@@ -1,0 +1,73 @@
+
+
+
+def invert_matrix(A, b):
+  """ shared square matrix A, shared vector b.
+      outputs [x] st Ax = b
+  """
+    m = len(A)
+    R = Matrix(m, m, sgf2n)
+    @for_range(m)
+    def f(i):
+        @for_range(m)
+        def g(j):
+            # this can be optimized but let's not bother for now
+            R[i][j] = sgf2n.get_random_triple()[0]
+    U = R * A
+
+    OpenedU = Matrix(m, m, cgf2n)
+
+    # This can be vectorized
+    for i in range(m):
+        for j in range(m):
+            OpenedU[i][j] = U[i][j].reveal()
+
+    U_inverse = GaussianElimination(U)
+    x = U_inverse * R * b
+    return x
+
+
+class DistriLUOV(object):
+    def __init__(self, r, m, v):
+        # m number of oil variables
+        # v number of vinegar variables
+        self.r = r
+        self.m = m
+        self.v = v
+
+    def sign(self, m):
+        pass
+
+    def build_augmented_matrix(self, v, h):
+    # builds matrix for the linear system F(v || o) = h
+    # with a random assignment of the vinegar variables
+    # output LHS || RHS in gf(2^r) ^ {m x (m+1)}
+    C = self.C
+    Q1 = self.Q1
+    T = self.T # T is the quadratic map F with size (v x m)
+    L = self.L # (m x n) matrix
+
+    m = self.m
+
+    RHS = [None] * m
+    # Perform step 1: RHS - h - C - L * ([v] || 0)
+    for i in range(m):
+        RHS[i] = h[i] - C[i] - sum(L[i][j] * v[j] for j in range(v))
+
+
+    # LHS should end up in an (m x m) matrix
+    LHS = [[None for i in range(m)] for j in range(m)]
+    for i in range(m):
+        for j in range(m):
+            # do the L * -T part of first v variables
+            temp_1 = sum(L[i][k] * -T[k][j] for k in range(v))
+            # do the L * 1 part for oil variables
+            temp_2 = sum(L[i][v+k] for k in range(m))
+            # add the results
+            LHS[i][j] = temp_1 + temp_2
+
+    for k in range(m):
+        # from Q_1 build P[k,1]
+        # from Q_2 build P[k,2]
+
+

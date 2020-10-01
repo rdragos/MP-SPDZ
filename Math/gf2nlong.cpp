@@ -52,13 +52,14 @@ int128 gf2n_long::mask;
 int128 gf2n_long::lowermask;
 int128 gf2n_long::uppermask;
 
-#define num_2_fields 1
+#define num_2_fields 2
 
 /* Require
  *  2*(n-1)-64+t1<64
  */
 int long_fields_2[num_2_fields][4] = {
     {128,7,2,1},
+    {64,4,3,1},
     };
 
 
@@ -72,7 +73,7 @@ void gf2n_long::init_field(int nn)
 #endif
     }
 
-  if (nn!=128) {
+  if (nn!=128 && nn!=64) {
       throw runtime_error("Compiled for GF(2^128) only. Change parameters or compile "
           "without USE_GF2N_LONG");
   }

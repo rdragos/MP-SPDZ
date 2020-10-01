@@ -43,7 +43,7 @@ ReplicatedMachine<T, U>::ReplicatedMachine(int argc, const char** argv,
     Server* server = Server::start_networking(N, playerno, nplayers, hostname, pnb);
 
     Machine<T, U>(playerno, N, progname, "empty",
-            gf2n::default_degree(), 0, 0, 0, 0, 0, use_encryption,
+            online_opts.lg2, 0, 0, 0, 0, 0, use_encryption,
             online_opts.live_prep, online_opts).run();
 
     if (server)

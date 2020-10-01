@@ -22,13 +22,13 @@ bool gf2n_short::useC;
 
 word gf2n_short_table[256][256];
 
-#define num_2_fields 4
+#define num_2_fields 5
 
 /* Require
  *  2*(n-1)-64+t1<64
  */
 int fields_2[num_2_fields][4] = { 
-	{4,1,0,0},{8,4,3,1},{28,1,0,0},{40,20,15,10}
+	{4,1,0,0},{8,4,3,1},{28,1,0,0},{40,20,15,10}, {64,4,3,1},
     };
 
 

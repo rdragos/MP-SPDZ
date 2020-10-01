@@ -1,0 +1,25 @@
+
+
+#n = 1 000 000
+#
+#@for_range(n)
+#def f(i):
+#    b = sint(2) * sint(5)
+#
+
+batch_size = 1000000
+num_iter = 1000
+
+V = [None] * batch_size
+
+start_timer(1)
+
+data_type = sgf2n
+
+@for_range(num_iter)
+def f(i):
+    for i in range(batch_size):
+        V[i] = data_type(1) * data_type(10)
+
+stop_timer(1)
+        

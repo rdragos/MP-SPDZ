@@ -1,0 +1,5 @@
+a = cint(2)
+b = cint(10)
+
+c = a + b
+print_ln('Result is %s', c)

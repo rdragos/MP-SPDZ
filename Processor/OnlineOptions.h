@@ -13,6 +13,7 @@ class OnlineOptions
 public:
     bool interactive;
     int lgp;
+    int lg2;
     bool live_prep;
     int playerno;
     std::string progname;
