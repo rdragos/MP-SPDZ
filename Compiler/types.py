@@ -2819,7 +2819,7 @@ class cfix(_number, _structure):
         k = self.k if k is None else k
         self.f = f
         self.k = k
-        self.size = get_global_vector_size()
+        self.size = get_global_vector_size() if size is None else size
         if isinstance(v, cint):
             self.v = cint(v,size=self.size)
         elif isinstance(v, cfix.scalars):
@@ -4566,6 +4566,11 @@ class SubMultiArray(object):
         return self.mul(other)
 
     def mul(self, other, res_params=None):
+        # do scalar-tensor multiplication
+        if isinstance(other, (self.value_type, self.value_type.clear_type)):
+            return self.assign_vector(self.get_vector() * other)
+
+        # fall back on matrix-matrix or matrix-vector multiplication
         assert len(self.sizes) == 2
         if isinstance(other, Array):
             assert len(other) == self.sizes[1]
