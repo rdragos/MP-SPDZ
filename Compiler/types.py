@@ -4568,7 +4568,12 @@ class SubMultiArray(object):
     def mul(self, other, res_params=None):
         # do scalar-tensor multiplication
         if isinstance(other, (self.value_type, self.value_type.clear_type)):
-            return self.assign_vector(self.get_vector() * other)
+            if len(self.sizes) == 2:
+                res = Matrix(self.sizes[0], self.sizes[1], self.value_type)
+            else:
+                res = MultiArray(self.sizes, self.value_type)
+            res.assign_vector(self.get_vector() * other)
+            return res
 
         # fall back on matrix-matrix or matrix-vector multiplication
         assert len(self.sizes) == 2
