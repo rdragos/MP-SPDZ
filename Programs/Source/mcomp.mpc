@@ -3,14 +3,12 @@ program.use_edabit(int(program.args[1]) == 2)
 
 print(program.use_dabit, program.use_edabit())
 
-program.set_security(63)
+program.set_security(40)
 program.set_bit_length(63)
 
-n = 2**10
+n = 2**20
 
-res = sint.Array(n)
-
-n_threads = 36
+n_threads = 16
 
 l = 1
 
@@ -29,10 +27,16 @@ try:
 except:
     pass
 
+res = sint.Array(n)
 print('%d comparison in %d threads and %d rounds' % (n, n_threads, l))
 
+
+start_timer(2)
 @multithread(n_threads, n)
 def _(base, m):
+    print("m = ", m)
     @for_range(l)
     def _(i):
         (sint(0, size=m) < sint(1, size=m)).store_in_mem(base)
+
+stop_timer(2)
