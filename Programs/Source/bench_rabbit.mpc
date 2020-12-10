@@ -11,8 +11,8 @@ from Compiler import util
 from Compiler import floatingpoint
 from Compiler.config import P_VALUES
 
-use_preOpL = False
-use_preOpL2 = True
+use_preOpL = True
+use_preOpL2 = False
 
 @vectorize
 def RabbitLT(R, x, k):
@@ -92,13 +92,12 @@ def customLTZ(s, a, k, kappa):
 
 
 @vectorize
-def rabbit(a, b):
+def rabbit(a):
     res = sint()
-    customLTZ(res, a-b, program.bit_length, None)
+    customLTZ(res, a, program.bit_length, None)
     return res
 
-n_threads = 1
-
+n_threads = 16
 l = 1
 n=2**20
 try:
@@ -116,6 +115,7 @@ try:
 except:
     pass
 
+
 res = sint.Array(n)
 print('%d comparison in %d threads and %d rounds' % (n, n_threads, l))
 
@@ -125,7 +125,7 @@ def _(base, m):
     print("m = ", m)
     @for_range(l)
     def _(i):
-        rabbit(sint(1, size=m), sint(0, size=m)).store_in_mem(base)
+        rabbit(sint(1, size=m)).store_in_mem(base)
 
 stop_timer(2)
 
