@@ -16,83 +16,6 @@ from math import log, ceil
 use_preOpL = False
 use_preOpL2 = True
 
-@vectorize
-def RabbitLT(R, x, k):
-    """
-    res = R <? x (logarithmic rounds version)
-
-    R: clear integer register
-    x: array of secret bits
-    """
-    R_bits = cbits.bit_decompose_clear(R, 64)
-    y = [sbit() for i in range(k)]
-    z = [sbit() for i in range(k)]
-    w = [sbit() for i in range(k)]
-
-    for i in range(k):
-        y[i] = x[i].bit_xor(R_bits[i])
-        y[i] = ~y[i]
-
-    z[k-1] = y[k-1]
-    w[k-1] = ~y[k-1]
-
-    y = y[::-1]
-
-    def and_op(x, y, z=None):
-        return x & y
-
-
-    if use_preOpL:
-        z = floatingpoint.PreOpL(and_op, y)[::-1]
-    elif use_preOpL2:
-        z = floatingpoint.PreOpL2(and_op, y)[::-1]
-
-    for i in range(k-1,0,-1): # no optimizing
-        w[i-1] = z[i-1] ^ z[i]
-
-    out = [sbit() for i in range(k)]
-    for i in range(k):
-        out[i] = R_bits[i] & w[i]
-
-    total = out[0]
-    for i in range(1, k):
-        total = total ^ out[i]
-
-    return total
-
-
-# from Compiler.comparison import *
-@vectorize
-def customLTZ(s, a, k, kappa):
-    BIT_SIZE = 64
-    M = None; R = None;
-    length_eda = BIT_SIZE
-
-    if (program.options.ring):
-        M = 2**(program.bit_length + 1)
-        R = 2**(program.bit_length)
-    else:
-        # length_eda = 64
-        M = P_VALUES[64]
-        R = (M - 1) // 2
-    r, r_bits = sint.get_edabit(length_eda, True)
-    masked_a = (a + r).reveal()
-    masked_b = masked_a + M - R
-
-    w = [None, None, None, None]
-
-    w[1] = RabbitLT(masked_a, r_bits, BIT_SIZE)
-    w[2] = RabbitLT(masked_b, r_bits, BIT_SIZE)
-
-    w[3] = cint(masked_b > 0)
-    w3_bits = cbits.bit_decompose_clear(w[3], 64)
-
-    movs(s, sint.conv(w[1] ^ w[2] ^ w3_bits[0]))
-
-
-
-
-
 def print_bits(bits):
     for i in range(len(bits)):
         print_str('%s', bits[i].reveal().to_regint_by_bit())
@@ -203,12 +126,6 @@ def customLTZC(s, a, k, kappa):
     CarryOutBabbit(s, masked_a_bits, r_bits, d)
 
 
-
-@vectorize
-def rabbit(a):
-    res = sint()
-    customLTZ(res, a, program.bit_length, None)
-    return res
 
 @vectorize
 def rabbitLTC(a):
