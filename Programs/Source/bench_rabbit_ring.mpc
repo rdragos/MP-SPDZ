@@ -29,15 +29,23 @@ def print_register_bits(bits):
 ################################ Carry Babbit ################################
 
 @vectorize
-def carry_babbit(b, a, compute_p=True):
+def carry_babbit(b, a, compute_p):
     """ Carry propogation:
         b = (p1, g1)
         b = (p2, g2)
         (p,g) = (p_2, g_2)o(p_1, g_1) -> (p_1 & p_2, g_2 | (p_2 & g_1))
     """
-    t1 = a[0].bit_and(b[0])
-    t2 = a[1] + a[0].bit_and(b[1])
-    return (t1, t2)
+#    t1 = a[0].bit_and(b[0])
+#     t2 = a[1] + a[0].bit_and(b[1])
+#     return (t1, t2)
+
+    t = [program.curr_block.new_reg('s') for i in range(3)]
+    if compute_p:
+        t[0] = a[0].bit_and(b[0])
+    t[2] = a[1] + b[1].bit_and(a[0])
+    print(type(t[0]), type(t[2]))
+    return t[0], t[2]
+
 
 
 @vectorize
@@ -45,13 +53,13 @@ def CarryOutAuxBabbit(a, kappa):
     k = len(a)
     if k > 1 and k % 2 == 1:
         raise Exception
-        a.append(None)
+        a.append(a[0])
         k += 1
-    u = [None]*(k//2)
+    u = [a[0]]*(k//2)
     a = a[::-1]
     if k > 1:
         for i in range(k//2):
-            u[i] = carry_babbit(a[2*i], a[2*i+1], True)
+            u[i] = carry_babbit(a[2*i], a[2*i+1], i != k//2-1)
         return CarryOutAuxBabbit(u[:k//2][::-1], kappa)
     else:
         return a[0][1]
@@ -65,6 +73,7 @@ def CarryOutRawBabbit(a, b, c=0):
     s = [program.curr_block.new_reg('s') for i in range(3)]
     for i in range(k):
         d[i] = list(b[i].half_adder(a[i]))
+        print("d = ", type(d[i][0]), type(d[i][1]))
 
     return CarryOutAuxBabbit(d[::-1], None)
 
@@ -81,10 +90,6 @@ def CarryOutBabbit(res, a, b, d, c=0, kappa=None):
     """
     k = len(a)
     movs(res, sint.conv((CarryOutRawBabbit(a, b, c) ^ d)))
-
-
-
-
 
 
 @vectorize
