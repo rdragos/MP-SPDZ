@@ -1,0 +1,90 @@
+from circuit import Circuit
+aes128 = Circuit('aes_128')
+import sys
+
+params = [int(_) for _ in sys.argv[2:]]
+N_TOTAL = params[0]
+N_PARALLEL = params[1]
+N_CARS = params[2]
+
+N = N_CARS
+NUM_BLOCKS_AT = 10
+NUM_BLOCKS_BOOKING = 6
+NUM_BLOCKS_TAG = 4
+
+sb32 = sbits.get_type(32)
+sb128 = sbits.get_type(128)
+
+def encrypt_ctr(key, message):
+    num_blocks = len(message)
+    counters = [sb128(i) for i in range(num_blocks)]
+    ciphertexts = aes128(sbitvec([key] * num_blocks), sbitvec(counters))
+    ciphertexts = ciphertexts.elements()
+
+    for i in range(len(ciphertexts)):
+        ciphertexts[i] += message[i]
+    return ciphertexts
+
+def cbc_mac(key, message):
+    last_ct = sb128(0)
+    for i in range(len(message)):
+        last_ct = last_ct ^ message[i]
+        ciphertext = aes128(sbitvec([key] * 1), sbitvec([last_ct] * 1))
+        last_ct = ciphertext.elements()[0]
+    return last_ct
+
+class Sepcar(object):
+    def __init__(self, n_parallel):
+        self.n_parallel = n_parallel
+        self.init_data()
+
+    def init_data(self):
+        self.ids = [sb32(i) for i in range(N)]
+        self.keys = [sb128(i) for i in range(N)]
+
+        self.booking_details = [sb128(0) for i in range(NUM_BLOCKS_BOOKING)] # (Mb)
+        self.signature = [sb128(0) for i in range(NUM_BLOCKS_TAG)] #(sigma^{uo})
+
+    def find_row(self, cur_id):
+        stored_key = sb128(0)
+        for i in range(N):
+            flag = cur_id.equal(self.ids[i])
+            stored_key += flag * self.keys[i]
+        return stored_key
+
+    def compute_access_token(self, key):
+        num_blocks = NUM_BLOCKS_AT
+        m_uc = [sb128(0) for _ in range(num_blocks)]
+        ct = encrypt_ctr(key, m_uc)
+        return ct
+
+    # this would probably be replaced by database calls to local shares?
+    def get_uc_keys(self):
+        return sb128(0), sb128(0)
+
+    def run(self):
+        requested_id = sb32(1)
+        key = self.find_row(requested_id)
+        access_token = self.compute_access_token(key)
+        k1, k2 = self.get_uc_keys()
+
+        def padto128(x, bit_length):
+            return sb128(0)
+            padding = [sbit(0) for _ in range(128 - bit_length)]
+            bits = x.bit_decompose()
+            return sb128.bit_compose(bits + padding) # TODO: instruction needs to be fixed
+
+        encrypt_ctr(k1, access_token + [padto128(requested_id, 32)])
+        tag = cbc_mac(k2, self.booking_details)
+
+def time_token_generation(n_parallel, n):
+    sepcar_prot = Sepcar(n_parallel)
+
+    start_timer(2)
+    @for_range_parallel(n_parallel, n)
+    def f(i):
+        sepcar_prot.run()
+
+    stop_timer(2)
+
+time_token_generation(N_PARALLEL, N_TOTAL)

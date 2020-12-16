@@ -1,0 +1,347 @@
+""" Compiler yet not fully fledged to do MPC imports;
+    Execfile can be avoided by implementing this ORAM-style
+    (put .py sources in Compiler/ directory)
+    - wanted to keep a clean directory structure hence
+    used execfile
+
+    This is HtMAC construction as specified in our ToSC paper:
+        https://eprint.iacr.org/2017/496
+    
+    Line with (set_global_vector_size) says:
+    'execute the PRF in n_parallel parallel instances'
+    This unrolls to single instructions which execute n_parallel times
+    in SPDZ on-line phase. (check the assembly code for more details
+        by compiling with -a flag)
+
+    For single instructions executing one time set n_parallel=1
+
+    - test_decryption = False => Compute Enc() + Tag-Gen.
+    - test_decryption = True  => Compute Enc() + Tag-Gen.
+        Then compute Dec() + Tag-Check.
+
+    Howto run?
+        - Compile it via ./compile.py htmac n_parallel n_total nmessages
+        Eg: ./compile.py 2 8 10
+        Following compiles 8 HtMAC instances where 2 is the level of parallelism
+        and each instance authenticates 10-block messages.
+        A simplistic view of what is happening: 
+        HtMAC(m) HtMAC(m) (1 run, 2 instances)
+        HtMAC(m) HtMAC(m) (1 run, 2 instances)
+        HtMAC(m) HtMAC(m) (1 run, 2 instances)
+        HtMAC(m) HtMAC(m) (1 run, 2 instances)
+        where |m| = 10 blocks
+    
+        - To run the online phase: ./Scripts/run-online htmac-2-8-10
+"""
+from Compiler.program import Program
+from Compiler import instructions_base
+from random import randint
+import sys
+
+params = [int(_) for _ in sys.argv[3:]]
+N_TOTAL = params[0]
+N_PARALLEL = params[1]
+N_CARS = params[2]
+
+n_total = N_TOTAL
+n_parallel = N_PARALLEL
+N = N_CARS
+
+print_ln('n_total: %s', n_total)
+print_ln('n_parallel: %s', n_parallel)
+print_ln('n_cars: %s', N)
+
+use_mimc_prf = True
+# Use just one PRF
+use_leg_prf = 1 - use_mimc_prf
+
+test_decryption = False
+instructions_base.set_global_vector_size(n_parallel)
+
+program.set_bit_length(32)
+program.set_security(40)
+
+use_cubes = True
+class MiMC(object):
+    """ Class for MiMC PRF as described in https://eprint.iacr.org/2016/542 """
+
+    def __init__(self, _rounds, _key, num_calls):
+        self.rounds = _rounds
+        # Random constants for each round
+        self.constants = self.get_rounds_constants()
+        self.key = _key
+
+    def get_rounds_constants(self):
+        return [sint.get_random_triple()[0].reveal() for i in range(self.rounds)] 
+
+    @vectorize
+    def encrypt(self, m):
+        key = self.key
+        x = m + key
+
+        if (use_cubes):
+          # preprocess random a, a^2, a^3 for each round
+          kd_a = [0] * self.rounds
+          kd_a2 = [0] * self.rounds
+          kd_a3 = [0] * self.rounds
+          for r in range(self.rounds):
+            kd_a[r],kd_a2[r] = sint.get_random_square()
+            kd_a3[r] = kd_a[r] * kd_a2[r]
+
+        for r in range(self.rounds):
+            if use_cubes:
+                a1, a2, a3 = kd_a[r], kd_a2[r], kd_a3[r]
+                y = (x - a1).reveal()
+                y2 = y**2
+                y3 = y * y2
+                x3 = 3*(y*a2 + y2*a1) + y3 + a3
+                x = x3 + key + self.constants[r]
+            else:
+                x = x ** 3
+                x = x + key + self.constants[r]
+
+        x = x + key
+        return x
+
+    def encrypt_clear_to_ss(self, m):
+        return self.encrypt(m)
+
+    def encrypt_ss_to_ss(self, m):
+        return self.encrypt(m)
+
+    def encrypt_ss_to_clear(self, m):
+        return self.encrypt(m).reveal()
+
+
+
+class HMAC(object):
+    def __init__(self, _enc):
+        self.cipher = _enc
+
+    def update_tweak(self, one_mask):
+        self.one_mask = one_mask
+
+    def default_auth(self, ciphertext):
+        sigma = cint(0)
+        m = len(ciphertext)
+        E = self.cipher
+        for i in range(m-1):
+            sigma += ciphertext[i]
+
+        digest = sigma.digest(16) # compute H(sigma)[0..127]
+
+        # E^{-1,0}(digest) = E(digest + -1 * E(1))
+        final_mask = digest + -1 * self.one_mask
+        return final_mask
+
+    def encryption_auth(self, ciphertext):
+        # tag is clear
+        final_mask = self.default_auth(ciphertext)
+        return self.cipher.encrypt_ss_to_clear(final_mask)
+
+    def decryption_auth(self, ciphertext):
+        # tag is shared
+        final_mask = self.default_auth(ciphertext)
+        return self.cipher.encrypt_ss_to_ss(final_mask)
+
+def get_long_random(nbits):
+    """ Returns random cint() % 2^{nbits} """
+    result = cint(0)
+    for i in range(nbits // 30):
+        result += cint(regint.get_random(30))
+        result <<= 30
+
+    result += cint(regint.get_random(nbits % 30))
+    return result
+
+
+class NonceEncryptMAC(object):
+    def __init__(self, _mac, _enc):
+        self.mac = _mac
+        self.enc = _enc
+
+        self.one_mask = self.enc.encrypt_clear_to_ss(cint(1)) # E(1)
+
+    def get_one_mask(self):
+        return self.one_mask
+
+    def apply(self, message):
+        nmessages = len(message)
+        nonce = get_long_random(120)
+        one_mask = self.one_mask
+        blocks = [None] * nmessages
+
+        for ctr in range(nmessages):
+            # mask \asn E(N + i * E(1))
+            mask = self.enc.encrypt_ss_to_ss(nonce + (ctr+1)*one_mask)
+            temp = message[ctr] + mask
+            blocks[ctr] = temp.reveal()
+
+        return nonce, blocks, self.mac.encryption_auth(blocks)
+
+    def default_decrypt(self, nonce, ciphertext):
+        one_mask = self.one_mask
+        blocks = [None] * nmessages
+
+        for ctr in range(nmessages):
+            mask = self.enc.encrypt_ss_to_ss(nonce + (ctr+1)*one_mask)
+            blocks[ctr] = ciphertext[ctr] - mask
+
+        computed_tag = self.mac.decryption_auth(ciphertext)
+        return blocks, computed_tag
+
+    def decrypt(self, nonce, ciphertext, recv_tag):
+        message, computed_tag = self.default_decrypt(nonce, ciphertext)
+        num_random = sint.get_random_triple()[0]
+
+        zero_checker = num_random * (recv_tag - computed_tag)
+        zero_checker = zero_checker.reveal()
+
+        @if_(zero_checker != 0)
+        def f():
+            print_ln("MAC ERROR. PANIC")
+
+        return message, computed_tag
+
+    def checker(self, nonce, ciphertext, recv_tag):
+        message, tag = self.decrypt(nonce, ciphertext, recv_tag)
+        print_ln('decrypted plaintext:')
+        for i in range(len(message)):
+            print_str('%s ', message[i].reveal())
+        print_ln()
+
+def derive_prf(key):
+    enc_alg = None
+    num_calls = None
+    if use_mimc_prf:
+        key = sint.get_random_triple()[0]
+        enc_alg = MiMC(73, key, num_calls)
+    elif use_leg_prf:
+        enc_alg = LegPRF(num_calls, bit_len=128)
+    return enc_alg
+
+class Encryptor(object):
+    def __init__(self):
+        # branch on desired PRF
+        self.enc = derive_prf(sint.get_random_triple()[0])
+        self.one_mask = self.enc.encrypt_clear_to_ss(cint(1)) # E(1)
+
+    def ctr_mode(self, message):
+        nmessages = len(message)
+        nonce = get_long_random(120)
+        one_mask = self.one_mask
+        blocks = [None] * nmessages
+
+        for ctr in range(nmessages):
+            # mask \asn E(N + i * E(1))
+            mask = self.enc.encrypt_ss_to_ss(nonce + (ctr+1)*one_mask)
+            temp = message[ctr] + mask
+            blocks[ctr] = temp.reveal()
+
+        return nonce, blocks
+
+    def ctr_mode(self, key, message):
+        nmessages = len(message)
+        enc = derive_prf(key)
+        one_mask = enc.encrypt_clear_to_ss(cint(1)) # E(1)
+
+        nonce = get_long_random(120)
+
+        blocks = [None] * nmessages
+        for ctr in range(nmessages):
+            # mask \asn E(N + i * E(1))
+            mask = enc.encrypt_ss_to_ss(nonce + (ctr+1)*one_mask)
+            temp = message[ctr] + mask
+            blocks[ctr] = temp.reveal()
+
+        return nonce, blocks
+
+
+
+class Sepcar(object):
+    def __init__(self):
+        self.init_constants()
+        self.init_inputs()
+        self.init_crypto() # fancy
+
+    def init_constants(self):
+        self.NUM_BLOCKS_AT = 10
+        self.NUM_BLOCKS_BOOKING = 6
+        self.NUM_BLOCKS_TAG = 4
+
+    def init_inputs(self):
+        self.ids = [sint(i) for i in range(N)]
+        self.keys = [sint(i) for i in range(N)]
+
+        NUM_BLOCKS_BOOKING = self.NUM_BLOCKS_BOOKING
+        NUM_BLOCKS_TAG = self.NUM_BLOCKS_TAG 
+
+        self.booking_details = [sint(0) for i in range(NUM_BLOCKS_BOOKING)] # (Mb)
+        self.signature = [sint(0) for i in range(NUM_BLOCKS_TAG)] #(sigma^{uo})
+
+    def init_crypto(self):
+        enc_alg = None
+        num_calls = None
+        # branch on desired PRF
+        if use_mimc_prf:
+            key = sint.get_random_triple()[0]
+            enc_alg = MiMC(73, key, num_calls)
+        elif use_leg_prf:
+            enc_alg = LegPRF(num_calls, bit_len=128)
+
+        Program.prog.curr_tape.start_new_basicblock(name='preproc-block2')
+
+        # Create HtMAC scheme
+        auth_hmac = HMAC(enc_alg)
+        auth_scheme = NonceEncryptMAC(auth_hmac, enc_alg)
+        # Update tweak with E_k(1)
+        auth_hmac.update_tweak(auth_scheme.get_one_mask())
+
+        self.hmac = auth_scheme
+        self.encryptor = Encryptor()
+
+    def find_row(self, cur_id):
+        stored_key = sint(0)
+        for i in range(N):
+            flag = (cur_id == self.ids[i])
+            stored_key += flag * self.keys[i]
+        return stored_key
+
+    def compute_access_token(self, key):
+        num_blocks = self.NUM_BLOCKS_AT
+        m_uc = [sint(0) for _ in range(num_blocks)]
+        nonce, ct = self.encryptor.ctr_mode(key, m_uc)
+        return ct
+
+    # this would probably be replaced by database calls to local shares?
+    def get_uc_keys(self):
+        return sint(0), sint(0)
+
+    def run(self):
+        requested_id = sint(1)
+        key = self.find_row(requested_id)
+        access_token = self.compute_access_token(key)
+        k1, k2 = self.get_uc_keys()
+
+        _, C_UC = self.encryptor.ctr_mode(k1, access_token)
+        message = [C_UC[i] for i in range(self.NUM_BLOCKS_BOOKING)]
+
+        # TODO (Dragos): this should be called with k2,k2_prime
+        # actually, this is correct as we can do key dependent pre-processing
+        # since it's the same key for different executions
+        iv, ciphertext, tag = self.hmac.apply(self.booking_details)
+
+
+
+def time_token_generation(n, n_parallel):
+    start_timer(1)
+    sepcar_prot = Sepcar()
+    @for_range(int(n/n_parallel))
+    def f(i):
+        sepcar_prot.run()
+    stop_timer(1)
+
+
+print_ln('##############################################')
+time_token_generation(n_total, n_parallel)
+print_ln('##############################################')
