@@ -69,13 +69,13 @@ def customLTZ(s, a, k, kappa):
     M = None; R = None;
     length_eda = BIT_SIZE
 
-    if (program.options.ring):
-        M = 2**(program.bit_length + 1)
-        R = 2**(program.bit_length)
-    else:
+    #if (program.options.ring):
+    #    M = 2**(program.bit_length + 1)
+    #    R = 2**(program.bit_length)
+    #else:
         # length_eda = 64
-        M = P_VALUES[64]
-        R = (M - 1) // 2
+    M = P_VALUES[64]
+    R = (M - 1) // 2
     r, r_bits = sint.get_edabit(length_eda, True)
     masked_a = (a + r).reveal()
     masked_b = masked_a + M - R

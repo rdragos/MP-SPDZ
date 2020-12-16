@@ -35,21 +35,19 @@ def carry_babbit(b, a, compute_p):
         b = (p2, g2)
         (p,g) = (p_2, g_2)o(p_1, g_1) -> (p_1 & p_2, g_2 | (p_2 & g_1))
     """
-#    t1 = a[0].bit_and(b[0])
-#     t2 = a[1] + a[0].bit_and(b[1])
-#     return (t1, t2)
-    if a is None:
-         print("oh yeah a")
-         return b
-    if b is None:
-         print("oh yeah b")
-         return a
+    #if a is None:
+    #     print("oh yeah a")
+    #     return b
+    #if b is None:
+    #     print("oh yeah b")
+    #     return a
 
     t = [program.curr_block.new_reg('s') for i in range(2)]
-    if compute_p:
-        t[0] = a[0].bit_and(b[0])
-    t[1] = a[0].bit_and(b[1]) + a[1]
-    t[0] = t[1]
+    t[0] = a[0].bit_and(b[0])
+    t[1] = a[1] + a[0].bit_and(b[1])
+    #t[0] = t[1]
+    #if compute_p:
+    #    t[0] = a[0].bit_and(b[0])
     #print(type(t[0]), type(t[2]))
     return t[0], t[1]
 
@@ -139,6 +137,49 @@ def rabbitLTC(a):
     res = sint()
     customLTZC(res, a, 64, None)
     return res
+
+
+#def rabbit(a, b):
+#    res = sint()
+#    customLTZC(res, a-b, 64, None)
+#    return res
+#
+#
+#
+#print_str('%s ', rabbit(sint(0), sint(1)).reveal() == 1)
+#print_str('%s ', rabbit(sint(1), sint(0)).reveal() == 0)
+#print_str('%s ', rabbit(sint(0), sint(-1)).reveal() == 0)
+#print_str('%s ', rabbit(sint(-1), sint(0)).reveal() == 1)
+#
+#if (program.options.ring):
+#	############################### Ring cases ###############################
+#    print_str('%s ', rabbit(sint(18446744073709551615), sint(0)).reveal() == 1)
+#    print_str('%s ', rabbit(sint(0), sint(18446744073709551615)).reveal() == 0)
+#    # 2**63 is considered to be positive
+#    print_str('%s ', rabbit(sint(9223372036854775808), sint(0)).reveal() == 0)
+#    # 2**63-1 is positive
+#    print_str('%s ', rabbit(sint(9223372036854775807), sint(0)).reveal() == 0)
+#    print_str('%s ', rabbit(sint(0), sint(9223372036854775807)).reveal() == 1)
+#    # 2**63+1 is negative
+#    print_str('%s ', rabbit(sint(9223372036854775809), sint(0)).reveal() == 1)
+#    print_str('%s ', rabbit(sint(0), sint(9223372036854775809)).reveal() == 0)
+#else:
+#	############################### Field cases ###############################
+#    print_str('%s ', rabbit(sint(18446744073709551555), sint(0)).reveal() == 1)
+#    print_str('%s ', rabbit(sint(1), sint(18446744073709551556)).reveal() == 0)
+#    # (p-1)/2 is considered to be positive
+#    print_str('%s ', rabbit(sint(9223372036854775778), sint(0)).reveal() == 0)
+#    print_str('%s ', rabbit(sint(0), sint(9223372036854775778)).reveal() == 1)
+#    # (p-1)/2-1 is positive
+#    print_str('%s ', rabbit(sint(9223372036854775777), sint(0)).reveal() == 0)
+#    print_str('%s ', rabbit(sint(0), sint(9223372036854775777)).reveal() == 1)
+#    # (p-1)/2+1 is negative
+#    print_str('%s ', rabbit(sint(9223372036854775779), sint(0)).reveal() == 1)
+#    print_str('%s ', rabbit(sint(0), sint(9223372036854775779)).reveal() == 0)
+#
+#
+#print_ln('')
+
 
 n_threads = 1
 

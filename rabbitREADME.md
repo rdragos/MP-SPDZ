@@ -23,3 +23,15 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
 * Surprisingly, the first fix itself does get out communication from 81MB to about 80 MB and not to the expected 71 MB. The reason for this is a bit myseterious but it seems like it is in the details of the outer protocol. Maybe the reveal a part of things.
 * Found it, spurious `clear_a = a.reveal()` that gets us down to about 72 MB.
 * Final bit, how to get the None optimization, can't do it without Dragos
+
+* Other todos: are the other results making sense (HE/OT and Field), why do we have low round complexity, WAN experiments
+
+
+# How to run the experiments
+
+* Passive ring HM
+  * `./compile.py -R 64 bench_rabbit_ring 32 1048000 1` and `./compile.py -R 64 mcomp 2 32 1048000 1`
+  * `./Scripts/ring.sh bench_rabbit_ring-32-1048000-1` and `./Scripts/ring.sh mcomp-2-32-1048000-1`
+* Passive field HM
+  * `./compile.py -p 64 bench_rabbit_field 32 1048000 1` and `./compile.py mcomp 32 1048000 1`
+  * `./Scripts/rep-field.sh bench_rabbit_field-32-1048000-1 -P 18446744073708797953` and `./Scripts/rep-field.sh mcomp-32-1048000-1 -lgp 128`
