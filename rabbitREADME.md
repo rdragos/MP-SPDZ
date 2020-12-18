@@ -41,13 +41,13 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
 
 * Field case: with the additional parameter -32-1048000-1 -P 18446744073708797953
 
-  soho-party.x | soho.sh
-  semi-party.x | semi.sh
-  mascot-party.x | mascot.sh
-  cowgear-party.x | cowgear.sh
+  `soho-party.x` | `./Scripts/soho.sh`
+  `semi-party.x` | `./Scripts/semi.sh`
+  `mascot-party.x` | `./Scripts/mascot.sh`
+  `cowgear-party.x` | `./Scripts/cowgear.sh`
 
 * For the ring case make sure to compile with -R 64
-  replicated-ring-party.x | ring.sh
-  semi2k-party.x | semi2k.sh
-  malicious-rep-ring-party.x | mal-rep-ring.sh
-  spdz2k-party.x | spdz2k.sh
+  `replicated-ring-party.x` | `./Scripts/ring.sh`
+  `semi2k-party.x` | `./Scripts/semi2k.sh`
+  `malicious-rep-ring-party.x` | `./Scripts/mal-rep-ring.sh`
+  `spdz2k-party.x` | `./Scripts/spdz2k.sh`
