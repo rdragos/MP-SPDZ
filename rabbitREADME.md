@@ -36,6 +36,7 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
   * `./compile.py -p 64 bench_rabbit_field 32 1048000 1` and `./compile.py mcomp 32 1048000 1`
   * `./Scripts/rep-field.sh bench_rabbit_field-32-1048000-1 -P 18446744073708797953` and `./Scripts/rep-field.sh mcomp-32-1048000-1 -lgp 128`
 
+* When running the rabbit field we need to set MOD = -DGFP_MOD_SZ=1 compilation flag in CONFIG.mine
 
 # List of protocols ran
 
@@ -43,6 +44,7 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
 
   `soho-party.x` | `./Scripts/soho.sh`
   `semi-party.x` | `./Scripts/semi.sh`
+  `malicious-rep-field-party.x` | `./Scripts/mal-rep-field.sh`
   `mascot-party.x` | `./Scripts/mascot.sh`
   `cowgear-party.x` | `./Scripts/cowgear.sh`
 
