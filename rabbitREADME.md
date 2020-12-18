@@ -35,3 +35,19 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
 * Passive field HM
   * `./compile.py -p 64 bench_rabbit_field 32 1048000 1` and `./compile.py mcomp 32 1048000 1`
   * `./Scripts/rep-field.sh bench_rabbit_field-32-1048000-1 -P 18446744073708797953` and `./Scripts/rep-field.sh mcomp-32-1048000-1 -lgp 128`
+
+
+# List of protocols ran
+
+* Field case: with the additional parameter -32-1048000-1 -P 18446744073708797953
+
+  soho-party.x
+  semi-party.x
+  mascot-party.x
+  cowgear-party.x
+
+* For the ring case make sure to compile with -R 64
+  replicated-ring-party.x
+  semi2k-party.x
+  malicious-rep-ring-party.x
+  spdz2k-party.x
