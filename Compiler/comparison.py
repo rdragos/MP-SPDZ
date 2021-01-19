@@ -277,7 +277,6 @@ def Mod2mField(a_prime, a, k, m, kappa, signed):
     c2m = program.curr_block.new_reg('c')
     c2k1 = program.curr_block.new_reg('c')
     PRandM(r_dprime, r_prime, r, k, m, kappa)
-    print(type(r_dprime), type(r_prime))
     ld2i(c2m, m)
     mulm(t[0], r_dprime, c2m)
     if signed:
@@ -426,10 +425,8 @@ def carry(b, a, compute_p):
         return (p,g) = (p_2, g_2)o(p_1, g_1) -> (p_1 & p_2, g_2 | (p_2 & g_1))
     """
     if a is None:
-        print("oh yeah a")
         return b
     if b is None:
-        print("oh yeah b")
         return a
     t = [program.curr_block.new_reg('s') for i in range(3)]
     if compute_p:
@@ -448,7 +445,6 @@ def CarryOutAux(a, kappa):
     a = a[::-1]
     if k > 1:
         for i in range(k//2):
-            print(k, i, i != k//2-1)
             u[i] = carry(a[2*i+1], a[2*i], i != k//2-1)
         return CarryOutAux(u[:k//2][::-1], kappa)
     else:

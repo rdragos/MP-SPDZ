@@ -6,9 +6,9 @@ print(program.use_dabit, program.use_edabit())
 program.set_security(40)
 program.set_bit_length(63)
 
-n = 2**20
+n = 1
 
-n_threads = 16
+n_threads = 1
 
 l = 1
 
