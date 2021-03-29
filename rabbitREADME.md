@@ -16,17 +16,6 @@ Similar with `bench_rabbit_field` and `bench_rabbit_ring`.
 
 
 
-# Notes on Rabbit debud for Ring
-
-* A large part of the extra bit-triples come from the carry_babbit not having the compute_p optimization (it is still unclear what this optimization is and if it affects out correctness). 
-* We are still not there and the other reason is two additional bit-triples per comparison. These two come from the `if a is None:` and `if b is None:` optimizations (in the first loop, compute_p is true but a happens to be None)   
-* Surprisingly, the first fix itself does get out communication from 81MB to about 80 MB and not to the expected 71 MB. The reason for this is a bit myseterious but it seems like it is in the details of the outer protocol. Maybe the reveal a part of things.
-* Found it, spurious `clear_a = a.reveal()` that gets us down to about 72 MB.
-* Final bit, how to get the None optimization, can't do it without Dragos
-
-* Other todos: are the other results making sense (HE/OT and Field), why do we have low round complexity, WAN experiments
-
-
 # How to run the experiments
 
 * Passive ring HM
